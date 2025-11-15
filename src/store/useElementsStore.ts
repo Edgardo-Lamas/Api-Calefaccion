@@ -10,8 +10,10 @@ interface ElementsStore {
   pipes: PipeSegment[];
   selectedElementId: string | null;
   addRadiator: (radiator: Radiator) => void;
+  addBoiler: (boiler: Boiler) => void;
   setSelectedElement: (id: string | null) => void;
   updateRadiatorPosition: (id: string, x: number, y: number) => void;
+  updateBoilerPosition: (id: string, x: number, y: number) => void;
   addElement: (element: Radiator | Boiler | PipeSegment) => void;
   updateElement: (id: string, updates: Partial<ElementBase>) => void;
   removeElement: (id: string) => void;
@@ -30,6 +32,12 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     }));
   },
 
+  addBoiler: (boiler) => {
+    set((state) => ({
+      boilers: [...state.boilers, boiler],
+    }));
+  },
+
   setSelectedElement: (id) => {
     set({ selectedElementId: id });
   },
@@ -38,6 +46,14 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     set((state) => ({
       radiators: state.radiators.map((radiator) =>
         radiator.id === id ? { ...radiator, x, y } : radiator
+      ),
+    }));
+  },
+
+  updateBoilerPosition: (id, x, y) => {
+    set((state) => ({
+      boilers: state.boilers.map((boiler) =>
+        boiler.id === id ? { ...boiler, x, y } : boiler
       ),
     }));
   },

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useToolsStore } from '../../store/useToolsStore';
 import { useElementsStore } from '../../store/useElementsStore';
 import { Radiator } from '../../models/Radiator';
+import { Boiler } from '../../models/Boiler';
 
 export const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -9,7 +10,17 @@ export const Canvas = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const { tool } = useToolsStore();
-  const { radiators, addRadiator, selectedElementId, setSelectedElement, updateRadiatorPosition, removeElement } = useElementsStore();
+  const { 
+    radiators, 
+    boilers,
+    addRadiator, 
+    addBoiler,
+    selectedElementId, 
+    setSelectedElement, 
+    updateRadiatorPosition,
+    updateBoilerPosition,
+    removeElement 
+  } = useElementsStore();
 
   // Función helper para verificar si un punto está dentro de un radiador
   const isPointInsideRadiator = (x: number, y: number, radiator: Radiator): boolean => {
@@ -18,6 +29,16 @@ export const Canvas = () => {
       x <= radiator.x + radiator.width &&
       y >= radiator.y &&
       y <= radiator.y + radiator.height
+    );
+  };
+
+  // Función helper para verificar si un punto está dentro de una caldera
+  const isPointInsideBoiler = (x: number, y: number, boiler: Boiler): boolean => {
+    return (
+      x >= boiler.x &&
+      x <= boiler.x + boiler.width &&
+      y >= boiler.y &&
+      y <= boiler.y + boiler.height
     );
   };
 
@@ -73,12 +94,48 @@ export const Canvas = () => {
         radiator.y + radiator.height / 2
       );
     });
+
+    // Dibujar todas las calderas
+    boilers.forEach((boiler) => {
+      // Dibujar rectángulo de la caldera (cuadrado)
+      ctx.fillStyle = '#FF5722';
+      ctx.fillRect(boiler.x, boiler.y, boiler.width, boiler.height);
+      
+      ctx.strokeStyle = '#D84315';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(boiler.x, boiler.y, boiler.width, boiler.height);
+
+      // Si está seleccionada, dibujar borde resaltado
+      if (boiler.id === selectedElementId) {
+        ctx.strokeStyle = '#2196F3';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(boiler.x - 2, boiler.y - 2, boiler.width + 4, boiler.height + 4);
+      }
+
+      // Dibujar símbolo de fuego (triángulo simple)
+      ctx.fillStyle = '#FFC107';
+      ctx.beginPath();
+      ctx.moveTo(boiler.x + boiler.width / 2, boiler.y + 15);
+      ctx.lineTo(boiler.x + 15, boiler.y + boiler.height - 15);
+      ctx.lineTo(boiler.x + boiler.width - 15, boiler.y + boiler.height - 15);
+      ctx.closePath();
+      ctx.fill();
+
+      // Mostrar potencia
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px Arial';
+      ctx.fillText(
+        `${boiler.power}W`,
+        boiler.x + 5,
+        boiler.y + boiler.height - 5
+      );
+    });
   };
 
-  // Redibujar cuando cambien los radiadores o la selección
+  // Redibujar cuando cambien los radiadores, calderas o la selección
   useEffect(() => {
     draw();
-  }, [radiators, selectedElementId]);
+  }, [radiators, boilers, selectedElementId]);
 
   // Redibujar al montar y al redimensionar
   useEffect(() => {
@@ -133,6 +190,22 @@ export const Canvas = () => {
       console.log('Radiador creado:', newRadiator);
     }
 
+    // Si la herramienta es "boiler", crear una caldera
+    if (tool === 'boiler') {
+      const newBoiler: Boiler = {
+        id: crypto.randomUUID(),
+        type: 'boiler',
+        x: coords.x,
+        y: coords.y,
+        width: 60,
+        height: 60,
+        power: 24000,
+      };
+
+      addBoiler(newBoiler);
+      console.log('Caldera creada:', newBoiler);
+    }
+
     // Si la herramienta es "select", intentar seleccionar o arrastrar
     if (tool === 'select') {
       // Buscar si hicimos click en algún radiador (recorrer en orden inverso para priorizar los últimos)
@@ -142,6 +215,17 @@ export const Canvas = () => {
         if (isPointInsideRadiator(coords.x, coords.y, radiators[i])) {
           foundRadiator = radiators[i];
           break;
+        }
+      }
+
+      // Si no se encontró radiador, buscar caldera
+      let foundBoiler: Boiler | null = null;
+      if (!foundRadiator) {
+        for (let i = boilers.length - 1; i >= 0; i--) {
+          if (isPointInsideBoiler(coords.x, coords.y, boilers[i])) {
+            foundBoiler = boilers[i];
+            break;
+          }
         }
       }
 
@@ -157,8 +241,20 @@ export const Canvas = () => {
         });
 
         console.log('Radiador seleccionado:', foundRadiator.id);
+      } else if (foundBoiler) {
+        // Seleccionar la caldera
+        setSelectedElement(foundBoiler.id);
+        
+        // Activar modo dragging y guardar offset
+        setIsDragging(true);
+        setDragOffset({
+          x: coords.x - foundBoiler.x,
+          y: coords.y - foundBoiler.y,
+        });
+
+        console.log('Caldera seleccionada:', foundBoiler.id);
       } else {
-        // No se encontró ningún radiador, deseleccionar
+        // No se encontró ningún elemento, deseleccionar
         setSelectedElement(null);
         setIsDragging(false);
         console.log('Deseleccionado');
@@ -176,12 +272,22 @@ export const Canvas = () => {
     const coords = getMouseCoordinates(e);
     setMousePos(coords);
 
-    // Si estamos arrastrando un radiador seleccionado
+    // Si estamos arrastrando un elemento seleccionado
     if (isDragging && selectedElementId) {
       const newX = coords.x - dragOffset.x;
       const newY = coords.y - dragOffset.y;
       
-      updateRadiatorPosition(selectedElementId, newX, newY);
+      // Verificar si el elemento es un radiador
+      const isRadiator = radiators.some(r => r.id === selectedElementId);
+      if (isRadiator) {
+        updateRadiatorPosition(selectedElementId, newX, newY);
+      }
+      
+      // Verificar si el elemento es una caldera
+      const isBoiler = boilers.some(b => b.id === selectedElementId);
+      if (isBoiler) {
+        updateBoilerPosition(selectedElementId, newX, newY);
+      }
     }
 
     console.log('MouseMove:', {
