@@ -1,21 +1,41 @@
 import { Radiator } from '../models/Radiator';
 import { Boiler } from '../models/Boiler';
-import { PipeSegment } from '../models/PipeSegment';
+import { PipeSegment, Point } from '../models/PipeSegment';
+import { distance } from './geometry';
 
 /**
  * Calcula la potencia total de todos los radiadores
  */
 export const calculateTotalPower = (radiators: Radiator[]): number => {
-  // TODO: Implement
-  return 0;
+  return radiators.reduce((total, radiator) => total + radiator.power, 0);
 };
 
 /**
  * Calcula la longitud de un segmento de tubería
  */
 export const calculatePipeLength = (pipe: PipeSegment): number => {
-  // TODO: Implement
-  return 0;
+  if (pipe.points.length < 2) return 0;
+  
+  let length = 0;
+  for (let i = 0; i < pipe.points.length - 1; i++) {
+    length += distance(pipe.points[i], pipe.points[i + 1]);
+  }
+  
+  return length;
+};
+
+/**
+ * Calcula la longitud de una serie de puntos
+ */
+export const calculatePointsLength = (points: Point[]): number => {
+  if (points.length < 2) return 0;
+  
+  let length = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    length += distance(points[i], points[i + 1]);
+  }
+  
+  return length;
 };
 
 /**

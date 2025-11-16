@@ -3,23 +3,32 @@ import { useToolsStore } from '../../store/useToolsStore';
 import { useElementsStore } from '../../store/useElementsStore';
 import { Radiator } from '../../models/Radiator';
 import { Boiler } from '../../models/Boiler';
+import { Point } from '../../models/PipeSegment';
+import { isPointNearElement, isPointNearPipe } from '../../utils/geometry';
 
 export const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [previewPoint, setPreviewPoint] = useState<Point | null>(null);
   const { tool } = useToolsStore();
   const { 
     radiators, 
     boilers,
+    pipes,
+    tempPipe,
     addRadiator, 
     addBoiler,
     selectedElementId, 
     setSelectedElement, 
     updateRadiatorPosition,
     updateBoilerPosition,
-    removeElement 
+    removeElement,
+    startPipe,
+    addPipePoint,
+    finishPipe,
+    cancelPipe,
   } = useElementsStore();
 
   // Función helper para verificar si un punto está dentro de un radiador
@@ -130,12 +139,71 @@ export const Canvas = () => {
         boiler.y + boiler.height - 5
       );
     });
+
+    // Dibujar tuberías finalizadas
+    pipes.forEach((pipe) => {
+      if (pipe.points.length < 2) return;
+
+      const isSelected = pipe.id === selectedElementId;
+      ctx.strokeStyle = isSelected ? '#FF9800' : '#607D8B';
+      ctx.lineWidth = pipe.diameter / 8; // Ancho visual basado en diámetro
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(pipe.points[0].x, pipe.points[0].y);
+      for (let i = 1; i < pipe.points.length; i++) {
+        ctx.lineTo(pipe.points[i].x, pipe.points[i].y);
+      }
+      ctx.stroke();
+
+      // Si está seleccionada, dibujar puntos de control
+      if (isSelected) {
+        pipe.points.forEach((point) => {
+          ctx.fillStyle = '#FF9800';
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+    });
+
+    // Dibujar tubería temporal (preview)
+    if (tempPipe && tempPipe.points.length > 0) {
+      ctx.strokeStyle = '#2196F3';
+      ctx.lineWidth = tempPipe.diameter / 8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([5, 5]); // Línea punteada
+
+      ctx.beginPath();
+      ctx.moveTo(tempPipe.points[0].x, tempPipe.points[0].y);
+      for (let i = 1; i < tempPipe.points.length; i++) {
+        ctx.lineTo(tempPipe.points[i].x, tempPipe.points[i].y);
+      }
+      
+      // Si hay punto preview, dibujarlo también
+      if (previewPoint) {
+        ctx.lineTo(previewPoint.x, previewPoint.y);
+      }
+      
+      ctx.stroke();
+      ctx.setLineDash([]); // Restaurar línea sólida
+
+      // Dibujar puntos de la tubería temporal
+      tempPipe.points.forEach((point, index) => {
+        ctx.fillStyle = index === 0 ? '#4CAF50' : '#2196F3';
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
   };
 
-  // Redibujar cuando cambien los radiadores, calderas o la selección
+  // Redibujar cuando cambien los radiadores, calderas, pipes, tempPipe, preview o la selección
   useEffect(() => {
     draw();
-  }, [radiators, boilers, selectedElementId]);
+  }, [radiators, boilers, pipes, tempPipe, previewPoint, selectedElementId]);
 
   // Redibujar al montar y al redimensionar
   useEffect(() => {
@@ -144,7 +212,7 @@ export const Canvas = () => {
     return () => window.removeEventListener('resize', draw);
   }, []);
 
-  // Listener de teclado para eliminar elementos
+  // Listener de teclado para eliminar elementos y cancelar tuberías
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Detectar teclas Delete o Backspace
@@ -153,11 +221,19 @@ export const Canvas = () => {
         removeElement(selectedElementId);
         console.log('Elemento eliminado:', selectedElementId);
       }
+      
+      // Detectar tecla Escape para cancelar tubería en progreso
+      if (e.key === 'Escape' && tempPipe) {
+        e.preventDefault();
+        cancelPipe(tempPipe.id);
+        setPreviewPoint(null);
+        console.log('Tubería cancelada');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, removeElement]);
+  }, [selectedElementId, tempPipe, removeElement, cancelPipe]);
 
   const getMouseCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -229,6 +305,17 @@ export const Canvas = () => {
         }
       }
 
+      // Si no se encontró radiador ni caldera, buscar tubería
+      let foundPipeId: string | null = null;
+      if (!foundRadiator && !foundBoiler) {
+        for (let i = pipes.length - 1; i >= 0; i--) {
+          if (isPointNearPipe(coords, pipes[i].points, 10)) {
+            foundPipeId = pipes[i].id;
+            break;
+          }
+        }
+      }
+
       if (foundRadiator) {
         // Seleccionar el radiador
         setSelectedElement(foundRadiator.id);
@@ -253,11 +340,53 @@ export const Canvas = () => {
         });
 
         console.log('Caldera seleccionada:', foundBoiler.id);
+      } else if (foundPipeId) {
+        // Seleccionar la tubería
+        setSelectedElement(foundPipeId);
+        setIsDragging(false); // Las tuberías no se pueden arrastrar
+        console.log('Tubería seleccionada:', foundPipeId);
       } else {
         // No se encontró ningún elemento, deseleccionar
         setSelectedElement(null);
         setIsDragging(false);
         console.log('Deseleccionado');
+      }
+    }
+
+    // Si la herramienta es "pipe", iniciar o agregar punto a tubería
+    if (tool === 'pipe') {
+      const coords = getMouseCoordinates(e);
+      
+      // Verificar si hay snap a elemento
+      let snapElementId: string | undefined;
+      let snapElementName = '';
+      for (const radiator of radiators) {
+        if (isPointNearElement(coords, radiator)) {
+          snapElementId = radiator.id;
+          snapElementName = 'Radiador';
+          console.log('🎯 SNAP detectado a radiador:', radiator.id);
+          break;
+        }
+      }
+      if (!snapElementId) {
+        for (const boiler of boilers) {
+          if (isPointNearElement(coords, boiler)) {
+            snapElementId = boiler.id;
+            snapElementName = 'Caldera';
+            console.log('🎯 SNAP detectado a caldera:', boiler.id);
+            break;
+          }
+        }
+      }
+
+      if (!tempPipe) {
+        // Iniciar nueva tubería
+        const pipeId = startPipe(coords, snapElementId);
+        console.log('Tubería iniciada:', { pipeId, fromElementId: snapElementId, snapTo: snapElementName });
+      } else {
+        // Agregar punto a tubería existente
+        addPipePoint(tempPipe.id, coords);
+        console.log('Punto agregado a tubería', { snapElementId, snapTo: snapElementName });
       }
     }
 
@@ -290,6 +419,13 @@ export const Canvas = () => {
       }
     }
 
+    // Si hay tubería temporal, mostrar preview
+    if (tempPipe && tempPipe.points.length > 0) {
+      setPreviewPoint(coords);
+    } else {
+      setPreviewPoint(null);
+    }
+
     console.log('MouseMove:', {
       tool,
       action: 'move',
@@ -310,6 +446,40 @@ export const Canvas = () => {
     });
   };
 
+  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const coords = getMouseCoordinates(e);
+    
+    if (tool === 'pipe' && tempPipe) {
+      // Verificar si el punto final está cerca de un equipo
+      const nearRadiator = radiators.find(r => isPointNearElement(coords, r));
+      const nearBoiler = boilers.find(b => isPointNearElement(coords, b));
+      const toElementId = nearRadiator?.id || nearBoiler?.id;
+      
+      if (toElementId) {
+        console.log('🎯 SNAP final detectado:', {
+          toElementId,
+          tipo: nearRadiator ? 'Radiador' : 'Caldera'
+        });
+      }
+      
+      console.log('Finalizando tubería:', {
+        tempPipeId: tempPipe.id,
+        fromElementId: tempPipe.fromElementId,
+        toElementId,
+        totalPoints: tempPipe.points.length + 1
+      });
+      
+      finishPipe(tempPipe.id, coords, toElementId);
+      setPreviewPoint(null);
+    }
+
+    console.log('DoubleClick:', {
+      tool,
+      action: 'dblclick',
+      coordinates: coords,
+    });
+  };
+
   return (
     <div style={{ flex: 1, position: 'relative' }}>
       <canvas
@@ -317,6 +487,7 @@ export const Canvas = () => {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
         style={{
           width: '100%',
           height: '100%',

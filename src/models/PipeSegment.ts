@@ -7,5 +7,8 @@ export interface PipeSegment {
   id: string;
   points: Point[];
   diameter: number;
-  material: string;
+  material?: string;
+  fromElementId?: string | null;
+  toElementId?: string | null;
+  length?: number;
 }
