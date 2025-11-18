@@ -3,7 +3,7 @@ import { useElementsStore } from '../../store/useElementsStore';
 import './PropertiesPanel.css';
 
 export const PropertiesPanel = () => {
-  const { radiators, boilers, pipes, selectedElementId, updateElement } = useElementsStore();
+  const { radiators, boilers, pipes, selectedElementId, updateElement, removeElement, setSelectedElement } = useElementsStore();
   
   // Encontrar el elemento seleccionado
   const selectedElement = 
@@ -37,14 +37,41 @@ export const PropertiesPanel = () => {
   };
 
   const handleSave = () => {
-    if (selectedElementId) {
-      updateElement(selectedElementId, editedValues);
-      alert('Propiedades actualizadas');
+    if (selectedElementId && selectedElement) {
+      // Solo enviar campos editables según tipo de elemento
+      const updates: any = {};
+      if (selectedElement.type === 'radiator') {
+        updates.power = editedValues.power;
+        updates.width = editedValues.width;
+        updates.height = editedValues.height;
+      } else if (selectedElement.type === 'boiler') {
+        updates.power = editedValues.power;
+        updates.width = editedValues.width;
+        updates.height = editedValues.height;
+      } else if (selectedElement.type === 'pipe') {
+        updates.diameter = editedValues.diameter;
+        updates.material = editedValues.material;
+      }
+      
+      updateElement(selectedElementId, updates);
+      setSelectedElement(null); // Cerrar panel
     }
   };
 
   const handleCancel = () => {
     setEditedValues(selectedElement);
+    setSelectedElement(null); // Cerrar panel
+  };
+
+  const handleDelete = () => {
+    if (selectedElementId && confirm('¿Estás seguro de eliminar este elemento?')) {
+      removeElement(selectedElementId);
+      setSelectedElement(null); // Cerrar panel
+    }
+  };
+
+  const handleClose = () => {
+    setSelectedElement(null);
   };
 
   // Renderizar según tipo de elemento
@@ -215,6 +242,26 @@ export const PropertiesPanel = () => {
 
   return (
     <div className="properties-panel">
+      {/* Botón cerrar (X) */}
+      <button
+        onClick={handleClose}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          background: 'transparent',
+          border: 'none',
+          fontSize: '24px',
+          cursor: 'pointer',
+          padding: '5px',
+          lineHeight: '1',
+          color: '#666',
+        }}
+        title="Cerrar"
+      >
+        ×
+      </button>
+
       {renderProperties()}
 
       <div className="property-actions">
@@ -235,6 +282,15 @@ export const PropertiesPanel = () => {
           }}
         >
           Cancelar
+        </button>
+        <button
+          onClick={handleDelete}
+          style={{
+            backgroundColor: '#f44336',
+            color: 'white',
+          }}
+        >
+          🗑️ Eliminar
         </button>
       </div>
     </div>
