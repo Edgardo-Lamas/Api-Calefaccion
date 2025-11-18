@@ -3,6 +3,7 @@ import { Radiator } from '../models/Radiator';
 import { Boiler } from '../models/Boiler';
 import { PipeSegment, Point, PipeType } from '../models/PipeSegment';
 import { ElementBase } from '../models/ElementBase';
+import { Project } from '../utils/projectStorage';
 
 interface ElementsStore {
   radiators: Radiator[];
@@ -10,6 +11,7 @@ interface ElementsStore {
   pipes: PipeSegment[];
   tempPipe: PipeSegment | null;
   selectedElementId: string | null;
+  projectName: string;
   addRadiator: (radiator: Radiator) => void;
   addBoiler: (boiler: Boiler) => void;
   setSelectedElement: (id: string | null) => void;
@@ -24,6 +26,8 @@ interface ElementsStore {
   removeElement: (id: string) => void;
   moveElement: (id: string, x: number, y: number) => void;
   clearAll: () => void;
+  loadProject: (project: Project) => void;
+  setProjectName: (name: string) => void;
 }
 
 export const useElementsStore = create<ElementsStore>((set) => ({
@@ -32,6 +36,7 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   pipes: [],
   tempPipe: null,
   selectedElementId: null,
+  projectName: 'Proyecto sin nombre',
   
   addRadiator: (radiator) => {
     set((state) => ({
@@ -233,5 +238,21 @@ export const useElementsStore = create<ElementsStore>((set) => ({
       tempPipe: null,
       selectedElementId: null,
     });
+  },
+
+  loadProject: (project: Project) => {
+    set({
+      radiators: project.radiators,
+      boilers: project.boilers,
+      pipes: project.pipes,
+      projectName: project.projectName,
+      tempPipe: null,
+      selectedElementId: null,
+    });
+    console.log('✅ Proyecto cargado en store:', project.projectName);
+  },
+
+  setProjectName: (name: string) => {
+    set({ projectName: name });
   },
 }));
