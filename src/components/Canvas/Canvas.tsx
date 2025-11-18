@@ -98,7 +98,7 @@ export const Canvas = () => {
       ctx.fillStyle = '#333';
       ctx.font = '10px Arial';
       ctx.fillText(
-        `${radiator.power}W`,
+        `${radiator.power} Kcal/h`,
         radiator.x + 5,
         radiator.y + radiator.height / 2
       );
@@ -133,8 +133,9 @@ export const Canvas = () => {
       // Mostrar potencia
       ctx.fillStyle = '#fff';
       ctx.font = '10px Arial';
+      const powerKW = (boiler.power / 860).toFixed(1);
       ctx.fillText(
-        `${boiler.power}W`,
+        `${powerKW}kW`,
         boiler.x + 5,
         boiler.y + boiler.height - 5
       );
@@ -325,7 +326,7 @@ export const Canvas = () => {
         y: coords.y,
         width: 80,
         height: 40,
-        power: 1000,
+        power: 1500, // Kcal/h
       };
 
       addRadiator(newRadiator);
@@ -341,7 +342,7 @@ export const Canvas = () => {
         y: coords.y,
         width: 60,
         height: 60,
-        power: 24000,
+        power: 20640, // Kcal/h (24kW × 860)
       };
 
       addBoiler(newBoiler);

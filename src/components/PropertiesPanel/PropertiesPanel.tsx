@@ -133,7 +133,7 @@ export const PropertiesPanel = () => {
           
           <div style={{ marginBottom: '15px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
-              Potencia (W)
+              Potencia (Kcal/h)
             </label>
             <input
               type="number"
@@ -147,6 +147,9 @@ export const PropertiesPanel = () => {
                 fontSize: '14px',
               }}
             />
+            <small style={{ color: '#666', fontSize: '11px' }}>
+              ≈ {((editedValues.power || 0) / 860).toFixed(1)} kW
+            </small>
           </div>
 
           <div style={{ marginBottom: '15px' }}>
