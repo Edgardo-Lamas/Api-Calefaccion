@@ -10,6 +10,9 @@ export const Toolbar = () => {
       // Usar el último punto como punto final
       const lastPoint = tempPipe.points[tempPipe.points.length - 1];
       finishPipe(tempPipe.id, lastPoint);
+      
+      // Volver al modo de selección después de finalizar
+      setTool('select');
     }
   };
 

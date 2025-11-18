@@ -145,10 +145,12 @@ export const Canvas = () => {
       if (pipe.points.length < 2) return;
 
       const isSelected = pipe.id === selectedElementId;
-      ctx.strokeStyle = isSelected ? '#FF9800' : '#607D8B';
-      ctx.lineWidth = pipe.diameter / 8; // Ancho visual basado en diámetro
+      // Color azul para tuberías normales, naranja si está seleccionada
+      ctx.strokeStyle = isSelected ? '#FF9800' : '#1976D2';
+      ctx.lineWidth = pipe.diameter / 4; // Grosor constante y visible
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+      ctx.setLineDash([]); // Línea sólida (sin puntos)
 
       ctx.beginPath();
       ctx.moveTo(pipe.points[0].x, pipe.points[0].y);
@@ -157,7 +159,7 @@ export const Canvas = () => {
       }
       ctx.stroke();
 
-      // Si está seleccionada, dibujar puntos de control
+      // Solo mostrar puntos de control si está seleccionada
       if (isSelected) {
         pipe.points.forEach((point) => {
           ctx.fillStyle = '#FF9800';
@@ -480,6 +482,16 @@ export const Canvas = () => {
     });
   };
 
+  // Determinar el cursor según el estado
+  const getCursor = () => {
+    if (tool === 'pipe' && tempPipe) return 'crosshair';
+    if (tool === 'pipe') return 'crosshair';
+    if (tool === 'select' && isDragging) return 'grabbing';
+    if (tool === 'select') return 'default';
+    if (tool === 'radiator' || tool === 'boiler') return 'copy';
+    return 'default';
+  };
+
   return (
     <div style={{ flex: 1, position: 'relative' }}>
       <canvas
@@ -492,6 +504,7 @@ export const Canvas = () => {
           width: '100%',
           height: '100%',
           border: '1px solid #ccc',
+          cursor: getCursor(),
         }}
       />
       <div style={{

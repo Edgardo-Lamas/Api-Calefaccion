@@ -69,11 +69,13 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     const newPipeId = crypto.randomUUID();
     const newPipe: PipeSegment = {
       id: newPipeId,
+      type: 'pipe',
       points: [startPoint],
       diameter: 16,
-      material: 'copper',
+      material: 'PEX',
       fromElementId: fromElementId || null,
       toElementId: null,
+      zone: null, // TODO: Implementar zonas/habitaciones
     };
     set({ tempPipe: newPipe });
     return newPipeId;
@@ -109,23 +111,27 @@ export const useElementsStore = create<ElementsStore>((set) => ({
 
       // Validar mínimo 2 puntos
       if (finalPoints.length < 2) {
-        console.log('❌ Tubería rechazada: menos de 2 puntos');
+        alert('Debes trazar al menos dos puntos de tubería.');
         return { tempPipe: null };
       }
 
-      // Calcular longitud
-      let length = 0;
+      // Calcular longitud en píxeles
+      let lengthPixels = 0;
       for (let i = 0; i < finalPoints.length - 1; i++) {
         const dx = finalPoints[i + 1].x - finalPoints[i].x;
         const dy = finalPoints[i + 1].y - finalPoints[i].y;
-        length += Math.sqrt(dx * dx + dy * dy);
+        lengthPixels += Math.sqrt(dx * dx + dy * dy);
       }
+
+      // Convertir a metros (escala aproximada: 50 píxeles = 1 metro)
+      const PIXELS_PER_METER = 50;
+      const lengthMeters = lengthPixels / PIXELS_PER_METER;
 
       const finishedPipe: PipeSegment = {
         ...state.tempPipe,
         points: finalPoints,
         toElementId: toElementId || null,
-        length,
+        length: lengthMeters,
       };
 
       console.log('✅ Tubería finalizada:', {
@@ -133,8 +139,19 @@ export const useElementsStore = create<ElementsStore>((set) => ({
         fromElementId: finishedPipe.fromElementId,
         toElementId: finishedPipe.toElementId,
         points: finishedPipe.points.length,
-        length: Math.round(finishedPipe.length || 0)
+        lengthMeters: lengthMeters.toFixed(1) + ' m'
       });
+
+      // Trigger evento onPipeCreated para cálculos adicionales
+      // TODO: Implementar callback para actualizar cálculos (pérdidas de carga, etc.)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('pipeCreated', { 
+          detail: finishedPipe 
+        }));
+      }
+
+      // Mostrar mensaje con la longitud creada
+      alert(`Longitud creada: ${lengthMeters.toFixed(1)} m`);
 
       return {
         pipes: [...state.pipes, finishedPipe],
