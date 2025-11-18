@@ -3,9 +3,12 @@ export interface Point {
   y: number;
 }
 
+export type PipeType = 'supply' | 'return'; // IDA = supply, RETORNO = return
+
 export interface PipeSegment {
   id: string;
   type: 'pipe';
+  pipeType: PipeType; // IDA o RETORNO
   points: Point[];
   diameter: number;
   material: string;
@@ -13,4 +16,5 @@ export interface PipeSegment {
   toElementId?: string | null;
   length?: number;
   zone?: string | null; // ID de la habitación/zona asociada
+  zIndex?: number; // Para manejar cruces (qué tubería va arriba)
 }

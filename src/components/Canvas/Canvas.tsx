@@ -12,7 +12,7 @@ export const Canvas = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [previewPoint, setPreviewPoint] = useState<Point | null>(null);
-  const { tool } = useToolsStore();
+  const { tool, pipeType } = useToolsStore();
   const { 
     radiators, 
     boilers,
@@ -140,22 +140,84 @@ export const Canvas = () => {
       );
     });
 
-    // Dibujar tuberías finalizadas
-    pipes.forEach((pipe) => {
+    // Dibujar tuberías finalizadas (ordenadas por zIndex)
+    const sortedPipes = [...pipes].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    
+    sortedPipes.forEach((pipe) => {
       if (pipe.points.length < 2) return;
 
       const isSelected = pipe.id === selectedElementId;
-      // Color azul para tuberías normales, naranja si está seleccionada
-      ctx.strokeStyle = isSelected ? '#FF9800' : '#1976D2';
+      
+      // Color según tipo: IDA = rojo, RETORNO = azul celeste
+      let baseColor = pipe.pipeType === 'supply' ? '#D32F2F' : '#29B6F6';
+      if (isSelected) baseColor = '#FF9800'; // Naranja si está seleccionada
+      
+      ctx.strokeStyle = baseColor;
       ctx.lineWidth = pipe.diameter / 4; // Grosor constante y visible
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.setLineDash([]); // Línea sólida (sin puntos)
+      ctx.setLineDash([]); // Línea sólida
 
+      // Dibujar la tubería con detección de cruces
       ctx.beginPath();
-      ctx.moveTo(pipe.points[0].x, pipe.points[0].y);
-      for (let i = 1; i < pipe.points.length; i++) {
-        ctx.lineTo(pipe.points[i].x, pipe.points[i].y);
+      for (let i = 0; i < pipe.points.length; i++) {
+        const point = pipe.points[i];
+        
+        if (i === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          // Detectar si este segmento cruza con otras tuberías
+          const prevPoint = pipe.points[i - 1];
+          const hasCrossing = sortedPipes.some(otherPipe => {
+            if (otherPipe.id === pipe.id) return false;
+            if ((otherPipe.zIndex || 0) >= (pipe.zIndex || 0)) return false;
+            
+            // Verificar si hay cruce entre segmentos
+            for (let j = 1; j < otherPipe.points.length; j++) {
+              const op1 = otherPipe.points[j - 1];
+              const op2 = otherPipe.points[j];
+              
+              // Detección simple de cruce (producto cruzado)
+              const d1 = (op2.x - op1.x) * (prevPoint.y - op1.y) - (op2.y - op1.y) * (prevPoint.x - op1.x);
+              const d2 = (op2.x - op1.x) * (point.y - op1.y) - (op2.y - op1.y) * (point.x - op1.x);
+              const d3 = (point.x - prevPoint.x) * (op1.y - prevPoint.y) - (point.y - prevPoint.y) * (op1.x - prevPoint.x);
+              const d4 = (point.x - prevPoint.x) * (op2.y - prevPoint.y) - (point.y - prevPoint.y) * (op2.x - prevPoint.x);
+              
+              if (d1 * d2 < 0 && d3 * d4 < 0) {
+                return true; // Hay cruce
+              }
+            }
+            return false;
+          });
+          
+          if (hasCrossing) {
+            // Dibujar gap (salto) en el cruce
+            const dx = point.x - prevPoint.x;
+            const dy = point.y - prevPoint.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const gapSize = 6; // Tamaño del gap
+            
+            if (len > gapSize * 2) {
+              const midX = (prevPoint.x + point.x) / 2;
+              const midY = (prevPoint.y + point.y) / 2;
+              const offsetX = (dx / len) * gapSize;
+              const offsetY = (dy / len) * gapSize;
+              
+              // Dibujar hasta antes del gap
+              ctx.lineTo(midX - offsetX, midY - offsetY);
+              ctx.stroke();
+              
+              // Saltar el gap
+              ctx.beginPath();
+              ctx.moveTo(midX + offsetX, midY + offsetY);
+              ctx.lineTo(point.x, point.y);
+            } else {
+              ctx.lineTo(point.x, point.y);
+            }
+          } else {
+            ctx.lineTo(point.x, point.y);
+          }
+        }
       }
       ctx.stroke();
 
@@ -172,7 +234,9 @@ export const Canvas = () => {
 
     // Dibujar tubería temporal (preview)
     if (tempPipe && tempPipe.points.length > 0) {
-      ctx.strokeStyle = '#2196F3';
+      // Color según tipo mientras se dibuja
+      const previewColor = tempPipe.pipeType === 'supply' ? '#D32F2F' : '#29B6F6';
+      ctx.strokeStyle = previewColor;
       ctx.lineWidth = tempPipe.diameter / 8;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -383,8 +447,8 @@ export const Canvas = () => {
 
       if (!tempPipe) {
         // Iniciar nueva tubería
-        const pipeId = startPipe(coords, snapElementId);
-        console.log('Tubería iniciada:', { pipeId, fromElementId: snapElementId, snapTo: snapElementName });
+        const pipeId = startPipe(coords, pipeType, snapElementId);
+        console.log('Tubería iniciada:', { pipeId, pipeType, fromElementId: snapElementId, snapTo: snapElementName });
       } else {
         // Agregar punto a tubería existente
         addPipePoint(tempPipe.id, coords);

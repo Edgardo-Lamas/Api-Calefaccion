@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Radiator } from '../models/Radiator';
 import { Boiler } from '../models/Boiler';
-import { PipeSegment, Point } from '../models/PipeSegment';
+import { PipeSegment, Point, PipeType } from '../models/PipeSegment';
 import { ElementBase } from '../models/ElementBase';
 
 interface ElementsStore {
@@ -15,7 +15,7 @@ interface ElementsStore {
   setSelectedElement: (id: string | null) => void;
   updateRadiatorPosition: (id: string, x: number, y: number) => void;
   updateBoilerPosition: (id: string, x: number, y: number) => void;
-  startPipe: (startPoint: Point, fromElementId?: string) => string;
+  startPipe: (startPoint: Point, pipeType: PipeType, fromElementId?: string) => string;
   addPipePoint: (tempPipeId: string, point: Point) => void;
   finishPipe: (tempPipeId: string, endPoint: Point, toElementId?: string) => void;
   cancelPipe: (tempPipeId: string) => void;
@@ -65,17 +65,19 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     }));
   },
 
-  startPipe: (startPoint, fromElementId) => {
+  startPipe: (startPoint, pipeType, fromElementId) => {
     const newPipeId = crypto.randomUUID();
     const newPipe: PipeSegment = {
       id: newPipeId,
       type: 'pipe',
+      pipeType: pipeType, // IDA o RETORNO
       points: [startPoint],
       diameter: 16,
       material: 'PEX',
       fromElementId: fromElementId || null,
       toElementId: null,
       zone: null, // TODO: Implementar zonas/habitaciones
+      zIndex: 0, // Por defecto, se puede cambiar para cruces
     };
     set({ tempPipe: newPipe });
     return newPipeId;

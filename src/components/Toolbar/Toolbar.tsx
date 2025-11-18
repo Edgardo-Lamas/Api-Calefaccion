@@ -2,7 +2,7 @@ import { useToolsStore } from '../../store/useToolsStore';
 import { useElementsStore } from '../../store/useElementsStore';
 
 export const Toolbar = () => {
-  const { tool, setTool } = useToolsStore();
+  const { tool, setTool, pipeType, setPipeType } = useToolsStore();
   const { clearAll } = useElementsStore();
 
   return (
@@ -60,6 +60,36 @@ export const Toolbar = () => {
       >
         Tubería
       </button>
+      {tool === 'pipe' && (
+        <>
+          <button
+            onClick={() => setPipeType('supply')}
+            style={{
+              backgroundColor: pipeType === 'supply' ? '#D32F2F' : '#f0f0f0',
+              color: pipeType === 'supply' ? 'white' : 'black',
+              padding: '8px 16px',
+              border: '1px solid #ccc',
+              cursor: 'pointer',
+              fontWeight: pipeType === 'supply' ? 'bold' : 'normal',
+            }}
+          >
+            🔴 IDA
+          </button>
+          <button
+            onClick={() => setPipeType('return')}
+            style={{
+              backgroundColor: pipeType === 'return' ? '#29B6F6' : '#f0f0f0',
+              color: pipeType === 'return' ? 'white' : 'black',
+              padding: '8px 16px',
+              border: '1px solid #ccc',
+              cursor: 'pointer',
+              fontWeight: pipeType === 'return' ? 'bold' : 'normal',
+            }}
+          >
+            🔵 RETORNO
+          </button>
+        </>
+      )}
       <div style={{ flex: 1 }} />
       <button
         onClick={() => {
