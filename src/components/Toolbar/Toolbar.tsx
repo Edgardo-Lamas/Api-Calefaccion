@@ -3,18 +3,7 @@ import { useElementsStore } from '../../store/useElementsStore';
 
 export const Toolbar = () => {
   const { tool, setTool } = useToolsStore();
-  const { clearAll, tempPipe, finishPipe } = useElementsStore();
-
-  const handleFinishPipe = () => {
-    if (tempPipe) {
-      // Usar el último punto como punto final
-      const lastPoint = tempPipe.points[tempPipe.points.length - 1];
-      finishPipe(tempPipe.id, lastPoint);
-      
-      // Volver al modo de selección después de finalizar
-      setTool('select');
-    }
-  };
+  const { clearAll } = useElementsStore();
 
   return (
     <div style={{ 
@@ -71,22 +60,6 @@ export const Toolbar = () => {
       >
         Tubería
       </button>
-      {tool === 'pipe' && (
-        <button
-          onClick={handleFinishPipe}
-          disabled={!tempPipe}
-          style={{
-            backgroundColor: tempPipe ? '#2196F3' : '#e0e0e0',
-            color: 'white',
-            padding: '8px 16px',
-            border: '1px solid #ccc',
-            cursor: tempPipe ? 'pointer' : 'not-allowed',
-            opacity: tempPipe ? 1 : 0.6,
-          }}
-        >
-          Finalizar Tubería
-        </button>
-      )}
       <div style={{ flex: 1 }} />
       <button
         onClick={() => {
