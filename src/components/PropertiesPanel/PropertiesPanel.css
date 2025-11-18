@@ -1,0 +1,128 @@
+/* Properties Panel - Mobile First */
+.properties-panel {
+  width: 300px;
+  padding: 20px;
+  border-left: 1px solid #ccc;
+  background-color: #f5f5f5;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+.properties-panel.empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.properties-panel h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.properties-panel p {
+  color: #666;
+  font-size: 14px;
+}
+
+.property-field {
+  margin-bottom: 15px;
+}
+
+.property-field label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-size: 12px;
+  color: #444;
+}
+
+.property-field input,
+.property-field select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.property-field input:focus,
+.property-field select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.property-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.property-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+  min-height: 44px; /* Touch-friendly */
+}
+
+.property-actions button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile Styles (< 768px) */
+@media (max-width: 768px) {
+  .properties-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 50vh;
+    border-left: none;
+    border-top: 2px solid #ccc;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 200;
+    transform: translateY(0);
+  }
+
+  .properties-panel.hidden {
+    transform: translateY(100%);
+  }
+
+  .properties-panel h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .property-field {
+    margin-bottom: 12px;
+  }
+
+  .property-field label {
+    font-size: 11px;
+  }
+
+  .property-field input,
+  .property-field select {
+    font-size: 16px; /* Evita zoom en iOS */
+  }
+}
+
+/* Tablet Styles (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .properties-panel {
+    width: 280px;
+  }
+}
+
+/* Desktop Styles (> 1024px) */
+@media (min-width: 1024px) {
+  .properties-panel {
+    width: 320px;
+  }
+}

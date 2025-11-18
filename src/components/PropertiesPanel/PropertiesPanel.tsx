@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useElementsStore } from '../../store/useElementsStore';
+import './PropertiesPanel.css';
 
 export const PropertiesPanel = () => {
   const { radiators, boilers, pipes, selectedElementId, updateElement } = useElementsStore();
@@ -22,15 +23,9 @@ export const PropertiesPanel = () => {
 
   if (!selectedElement) {
     return (
-      <div style={{ 
-        width: '300px', 
-        padding: '20px',
-        borderLeft: '1px solid #ccc',
-        backgroundColor: '#f5f5f5',
-        overflowY: 'auto',
-      }}>
-        <h3 style={{ marginTop: 0 }}>Propiedades</h3>
-        <p style={{ color: '#666', fontSize: '14px' }}>
+      <div className="properties-panel empty">
+        <h3>Propiedades</h3>
+        <p>
           Selecciona un elemento para ver y editar sus propiedades
         </p>
       </div>
@@ -57,59 +52,38 @@ export const PropertiesPanel = () => {
     if (selectedElement.type === 'radiator') {
       return (
         <>
-          <h3 style={{ marginTop: 0, color: '#333' }}>🔲 Radiador</h3>
+          <h3>🔲 Radiador</h3>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+          <div className="property-field">
+            <label>
               Potencia (W)
             </label>
             <input
               type="number"
               value={editedValues.power || 0}
               onChange={(e) => handleChange('power', Number(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+          <div className="property-field">
+            <label>
               Ancho (px)
             </label>
             <input
               type="number"
               value={editedValues.width || 0}
               onChange={(e) => handleChange('width', Number(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+          <div className="property-field">
+            <label>
               Alto (px)
             </label>
             <input
               type="number"
               value={editedValues.height || 0}
               onChange={(e) => handleChange('height', Number(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
             />
           </div>
 
@@ -129,31 +103,24 @@ export const PropertiesPanel = () => {
     if (selectedElement.type === 'boiler') {
       return (
         <>
-          <h3 style={{ marginTop: 0, color: '#333' }}>🔥 Caldera</h3>
+          <h3>🔥 Caldera</h3>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+          <div className="property-field">
+            <label>
               Potencia (Kcal/h)
             </label>
             <input
               type="number"
               value={editedValues.power || 0}
               onChange={(e) => handleChange('power', Number(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
             />
             <small style={{ color: '#666', fontSize: '11px' }}>
               ≈ {((editedValues.power || 0) / 860).toFixed(1)} kW
             </small>
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+          <div className="property-field">
+            <label>
               Tamaño (px)
             </label>
             <input
@@ -162,13 +129,6 @@ export const PropertiesPanel = () => {
               onChange={(e) => {
                 handleChange('width', Number(e.target.value));
                 handleChange('height', Number(e.target.value)); // Mantener cuadrado
-              }}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                fontSize: '14px',
               }}
             />
           </div>
@@ -190,24 +150,17 @@ export const PropertiesPanel = () => {
       const pipe = selectedElement as any;
       return (
         <>
-          <h3 style={{ marginTop: 0, color: '#333' }}>
+          <h3>
             {pipe.pipeType === 'supply' ? '🔴 Tubería IDA' : '🔵 Tubería RETORNO'}
           </h3>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+          <div className="property-field">
+            <label>
               Diámetro (mm)
             </label>
             <select
               value={editedValues.diameter || 16}
               onChange={(e) => handleChange('diameter', Number(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
             >
               <option value={12}>12 mm</option>
               <option value={16}>16 mm</option>
@@ -217,20 +170,13 @@ export const PropertiesPanel = () => {
             </select>
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+          <div className="property-field">
+            <label>
               Material
             </label>
             <select
               value={editedValues.material || 'PEX'}
               onChange={(e) => handleChange('material', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
             >
               <option value="PEX">PEX</option>
               <option value="Cobre">Cobre</option>
@@ -268,34 +214,15 @@ export const PropertiesPanel = () => {
   };
 
   return (
-    <div style={{ 
-      width: '300px', 
-      padding: '20px',
-      borderLeft: '1px solid #ccc',
-      backgroundColor: '#f5f5f5',
-      overflowY: 'auto',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <div className="properties-panel">
       {renderProperties()}
 
-      <div style={{ 
-        marginTop: 'auto',
-        paddingTop: '20px',
-        display: 'flex',
-        gap: '10px'
-      }}>
+      <div className="property-actions">
         <button
           onClick={handleSave}
           style={{
-            flex: 1,
-            padding: '10px',
             backgroundColor: '#4CAF50',
             color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
           }}
         >
           Guardar
@@ -303,13 +230,8 @@ export const PropertiesPanel = () => {
         <button
           onClick={handleCancel}
           style={{
-            flex: 1,
-            padding: '10px',
             backgroundColor: '#757575',
             color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
           }}
         >
           Cancelar

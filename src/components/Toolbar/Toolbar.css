@@ -1,0 +1,67 @@
+/* Toolbar - Mobile First */
+.toolbar-container {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background-color: #fff;
+  position: relative;
+  z-index: 100;
+}
+
+.toolbar-container button {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s;
+  min-width: 44px; /* Touch-friendly */
+  min-height: 44px;
+}
+
+.toolbar-container button:active {
+  transform: scale(0.95);
+}
+
+/* Autosave indicator responsive */
+.autosave-indicator {
+  white-space: nowrap;
+}
+
+/* Mobile Styles (< 768px) */
+@media (max-width: 768px) {
+  .toolbar-container {
+    padding: 8px;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .toolbar-container button {
+    font-size: 13px;
+    padding: 10px 14px;
+    flex-shrink: 0;
+  }
+
+  .autosave-indicator {
+    font-size: 10px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+/* Tablet Styles (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .toolbar-container button {
+    padding: 8px 14px;
+  }
+}
+
+/* Desktop Styles (> 1024px) */
+@media (min-width: 1024px) {
+  .toolbar-container {
+    flex-wrap: nowrap;
+  }
+}
