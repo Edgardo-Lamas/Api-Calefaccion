@@ -71,6 +71,7 @@ export const Toolbar = () => {
               border: '1px solid #ccc',
               cursor: 'pointer',
               fontWeight: pipeType === 'supply' ? 'bold' : 'normal',
+              minWidth: '100px',
             }}
           >
             🔴 IDA
@@ -84,6 +85,7 @@ export const Toolbar = () => {
               border: '1px solid #ccc',
               cursor: 'pointer',
               fontWeight: pipeType === 'return' ? 'bold' : 'normal',
+              minWidth: '100px',
             }}
           >
             🔵 RETORNO

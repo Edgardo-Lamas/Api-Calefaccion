@@ -170,11 +170,46 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   },
   
   addElement: (element) => {
-    // TODO: Implement
+    // TODO: Implement generically if needed
+    console.log('addElement called:', element);
   },
   
   updateElement: (id, updates) => {
-    // TODO: Implement
+    set((state) => {
+      // Verificar si es radiador
+      const isRadiator = state.radiators.some(r => r.id === id);
+      if (isRadiator) {
+        return {
+          radiators: state.radiators.map((radiator) =>
+            radiator.id === id ? { ...radiator, ...updates } as Radiator : radiator
+          ),
+        };
+      }
+      
+      // Verificar si es caldera
+      const isBoiler = state.boilers.some(b => b.id === id);
+      if (isBoiler) {
+        return {
+          boilers: state.boilers.map((boiler) =>
+            boiler.id === id ? { ...boiler, ...updates } as Boiler : boiler
+          ),
+        };
+      }
+      
+      // Verificar si es tubería
+      const isPipe = state.pipes.some(p => p.id === id);
+      if (isPipe) {
+        return {
+          pipes: state.pipes.map((pipe) =>
+            pipe.id === id ? { ...pipe, ...updates } as PipeSegment : pipe
+          ),
+        };
+      }
+      
+      return state;
+    });
+    
+    console.log('Elemento actualizado:', { id, updates });
   },
   
   removeElement: (id) => {
