@@ -35,8 +35,14 @@
 
 /* Mobile Styles (< 768px) */
 @media (max-width: 768px) {
+  .app-container {
+    height: 100dvh; /* Dynamic viewport height - ajusta cuando aparece teclado */
+  }
+
   .main-content {
     flex-direction: column;
+    overflow-y: auto; /* Permite scroll cuando teclado cubre contenido */
+    -webkit-overflow-scrolling: touch; /* Smooth scroll en iOS */
   }
   
   .autosave-indicator {

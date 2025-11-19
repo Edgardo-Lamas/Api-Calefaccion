@@ -51,26 +51,39 @@ export const Toolbar = () => {
     const blob = new Blob([json], { type: 'application/json' });
     const file = new File([blob], `${name.replace(/\s+/g, '_')}.json`, { type: 'application/json' });
 
-    // Verificar si el navegador soporta Web Share API
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    // Intentar Web Share API con archivos
+    if (navigator.share) {
       try {
+        // Primero intentar compartir con archivo
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `Proyecto: ${name}`,
+            text: `Proyecto de calefacción: ${name}`,
+            files: [file],
+          });
+          console.log('✅ Proyecto compartido con archivo exitosamente');
+          return;
+        }
+        
+        // Si no soporta archivos, compartir solo texto con instrucción
         await navigator.share({
           title: `Proyecto: ${name}`,
-          text: `Proyecto de calefacción: ${name}`,
-          files: [file],
+          text: `Proyecto de calefacción: ${name}\n\nDescarga el archivo JSON desde la app para cargarlo.`,
         });
-        console.log('✅ Proyecto compartido exitosamente');
+        // Después del share de texto, descargar el archivo
+        downloadProjectAsJSON(radiators, boilers, pipes, name);
+        console.log('✅ Link compartido y archivo descargado');
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
           console.error('Error al compartir:', error);
-          // Fallback: descargar archivo
+          // Fallback: solo descargar archivo
           downloadProjectAsJSON(radiators, boilers, pipes, name);
         }
       }
     } else {
       // Fallback para navegadores sin Web Share API (PC)
       downloadProjectAsJSON(radiators, boilers, pipes, name);
-      alert('✅ Proyecto descargado (tu navegador no soporta compartir archivos)');
+      alert('✅ Proyecto descargado');
     }
   };
 
