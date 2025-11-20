@@ -596,10 +596,15 @@ export const Canvas = () => {
       // Pinch-to-zoom con dos dedos
       const distance = getTouchDistance(e.touches[0], e.touches[1]);
       setLastTouchDistance(distance);
-      e.preventDefault();
-    } else if (e.touches.length === 1 && tool === 'select') {
-      // Pan con un dedo en modo selección
+      // También habilitar pan con dos dedos
       setIsPanning(true);
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      setLastPanPoint({ x: midX, y: midY });
+      e.preventDefault();
+    } else if (e.touches.length === 1) {
+      // Con un dedo, iniciar pan si no hay un drag activo
+      // Esto permite pan en cualquier modo cuando no arrastras un elemento
       setLastPanPoint({
         x: e.touches[0].clientX,
         y: e.touches[0].clientY
@@ -609,29 +614,48 @@ export const Canvas = () => {
 
   // Handler para touch move (movimiento de toque)
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length === 2 && lastTouchDistance !== null) {
-      // Pinch-to-zoom
-      const distance = getTouchDistance(e.touches[0], e.touches[1]);
-      const scale = distance / lastTouchDistance;
-      setZoom(prevZoom => Math.max(0.1, Math.min(5, prevZoom * scale)));
-      setLastTouchDistance(distance);
-      e.preventDefault();
-    } else if (e.touches.length === 1 && isPanning && tool === 'select') {
-      // Pan
-      const touch = e.touches[0];
-      const dx = touch.clientX - lastPanPoint.x;
-      const dy = touch.clientY - lastPanPoint.y;
+    if (e.touches.length === 2) {
+      // Pinch-to-zoom con dos dedos
+      if (lastTouchDistance !== null) {
+        const distance = getTouchDistance(e.touches[0], e.touches[1]);
+        const scale = distance / lastTouchDistance;
+        setZoom(prevZoom => Math.max(0.1, Math.min(5, prevZoom * scale)));
+        setLastTouchDistance(distance);
+      }
+      
+      // Pan simultáneo con el punto medio de los dos dedos
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const dx = midX - lastPanPoint.x;
+      const dy = midY - lastPanPoint.y;
       
       setPanOffset(prev => ({
         x: prev.x + dx,
         y: prev.y + dy
       }));
       
+      setLastPanPoint({ x: midX, y: midY });
+      e.preventDefault();
+    } else if (e.touches.length === 1 && !isDragging) {
+      // Pan con un dedo solo si no estamos arrastrando un elemento
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastPanPoint.x;
+      const dy = touch.clientY - lastPanPoint.y;
+      
+      // Solo hacer pan si el movimiento es significativo (más de 5px)
+      // Esto evita interferir con clicks/taps
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        setIsPanning(true);
+        setPanOffset(prev => ({
+          x: prev.x + dx,
+          y: prev.y + dy
+        }));
+      }
+      
       setLastPanPoint({
         x: touch.clientX,
         y: touch.clientY
       });
-      e.preventDefault();
     }
   };
 
