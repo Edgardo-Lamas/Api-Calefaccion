@@ -12,6 +12,14 @@ export const Canvas = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [previewPoint, setPreviewPoint] = useState<Point | null>(null);
+  
+  // Estado para zoom y pan
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
+  const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
+  
   const { tool, pipeType } = useToolsStore();
   const { 
     radiators, 
@@ -66,6 +74,13 @@ export const Canvas = () => {
 
     // Limpiar canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Guardar estado del contexto
+    ctx.save();
+    
+    // Aplicar transformaciones de zoom y pan
+    ctx.translate(panOffset.x, panOffset.y);
+    ctx.scale(zoom, zoom);
 
     // Dibujar todos los radiadores
     radiators.forEach((radiator) => {
@@ -265,12 +280,15 @@ export const Canvas = () => {
         ctx.fill();
       });
     }
+    
+    // Restaurar estado del contexto
+    ctx.restore();
   };
 
   // Redibujar cuando cambien los radiadores, calderas, pipes, tempPipe, preview o la selección
   useEffect(() => {
     draw();
-  }, [radiators, boilers, pipes, tempPipe, previewPoint, selectedElementId]);
+  }, [radiators, boilers, pipes, tempPipe, previewPoint, selectedElementId, zoom, panOffset]);
 
   // Redibujar al montar y al redimensionar
   useEffect(() => {
@@ -307,8 +325,12 @@ export const Canvas = () => {
     if (!canvas) return { x: 0, y: 0 };
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+    
+    // Aplicar transformaciones inversas de zoom y pan
+    const x = (clientX - panOffset.x) / zoom;
+    const y = (clientY - panOffset.y) / zoom;
 
     return { x, y };
   };
@@ -547,6 +569,90 @@ export const Canvas = () => {
     });
   };
 
+  // Funciones para zoom
+  const handleZoomIn = () => {
+    setZoom(prevZoom => Math.min(prevZoom * 1.2, 5)); // Max zoom 5x
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prevZoom => Math.max(prevZoom / 1.2, 0.1)); // Min zoom 0.1x
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  // Calcular distancia entre dos puntos táctiles
+  const getTouchDistance = (touch1: React.Touch, touch2: React.Touch) => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Handler para touch start (inicio de toque)
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2) {
+      // Pinch-to-zoom con dos dedos
+      const distance = getTouchDistance(e.touches[0], e.touches[1]);
+      setLastTouchDistance(distance);
+      e.preventDefault();
+    } else if (e.touches.length === 1 && tool === 'select') {
+      // Pan con un dedo en modo selección
+      setIsPanning(true);
+      setLastPanPoint({
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      });
+    }
+  };
+
+  // Handler para touch move (movimiento de toque)
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2 && lastTouchDistance !== null) {
+      // Pinch-to-zoom
+      const distance = getTouchDistance(e.touches[0], e.touches[1]);
+      const scale = distance / lastTouchDistance;
+      setZoom(prevZoom => Math.max(0.1, Math.min(5, prevZoom * scale)));
+      setLastTouchDistance(distance);
+      e.preventDefault();
+    } else if (e.touches.length === 1 && isPanning && tool === 'select') {
+      // Pan
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastPanPoint.x;
+      const dy = touch.clientY - lastPanPoint.y;
+      
+      setPanOffset(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
+      }));
+      
+      setLastPanPoint({
+        x: touch.clientX,
+        y: touch.clientY
+      });
+      e.preventDefault();
+    }
+  };
+
+  // Handler para touch end (fin de toque)
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length < 2) {
+      setLastTouchDistance(null);
+    }
+    if (e.touches.length === 0) {
+      setIsPanning(false);
+    }
+  };
+
+  // Handler para wheel (zoom con rueda del mouse)
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const zoomSensitivity = 0.001;
+    const delta = -e.deltaY * zoomSensitivity;
+    setZoom(prevZoom => Math.max(0.1, Math.min(5, prevZoom * (1 + delta))));
+  };
+
   // Determinar el cursor según el estado
   const getCursor = () => {
     if (tool === 'pipe' && tempPipe) return 'crosshair';
@@ -565,13 +671,79 @@ export const Canvas = () => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onDoubleClick={handleDoubleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
         style={{
           width: '100%',
           height: '100%',
           border: '1px solid #ccc',
           cursor: getCursor(),
+          touchAction: 'none', // Prevenir scroll nativo en touch
         }}
       />
+      
+      {/* Controles de Zoom */}
+      <div style={{
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        zIndex: 10,
+      }}>
+        <button
+          onClick={handleZoomIn}
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            border: '2px solid #2196F3',
+            background: 'white',
+            fontSize: '20px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+          title="Acercar (Zoom In)"
+        >
+          +
+        </button>
+        <button
+          onClick={handleZoomOut}
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            border: '2px solid #2196F3',
+            background: 'white',
+            fontSize: '20px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+          title="Alejar (Zoom Out)"
+        >
+          −
+        </button>
+        <button
+          onClick={handleResetZoom}
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            border: '2px solid #757575',
+            background: 'white',
+            fontSize: '16px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+          title="Restablecer Zoom"
+        >
+          ⟲
+        </button>
+      </div>
+      
       <div style={{
         position: 'absolute',
         top: 10,
@@ -581,7 +753,7 @@ export const Canvas = () => {
         fontSize: '12px',
         fontFamily: 'monospace',
       }}>
-        Tool: {tool} | Mouse: ({mousePos.x.toFixed(0)}, {mousePos.y.toFixed(0)})
+        Tool: {tool} | Zoom: {(zoom * 100).toFixed(0)}% | Mouse: ({mousePos.x.toFixed(0)}, {mousePos.y.toFixed(0)})
       </div>
     </div>
   );
