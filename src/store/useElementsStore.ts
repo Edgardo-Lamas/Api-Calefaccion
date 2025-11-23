@@ -25,6 +25,7 @@ interface ElementsStore {
   updateElement: (id: string, updates: Partial<ElementBase>) => void;
   removeElement: (id: string) => void;
   moveElement: (id: string, x: number, y: number) => void;
+  setPipes: (pipes: PipeSegment[]) => void;
   clearAll: () => void;
   loadProject: (project: Project) => void;
   setProjectName: (name: string) => void;
@@ -228,6 +229,11 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   
   moveElement: (id, x, y) => {
     // TODO: Implement
+  },
+
+  setPipes: (pipes) => {
+    set({ pipes });
+    console.log(`✅ ${pipes.length} tuberías actualizadas en el store`);
   },
 
   clearAll: () => {

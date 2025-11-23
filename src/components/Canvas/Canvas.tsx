@@ -3,15 +3,13 @@ import { useToolsStore } from '../../store/useToolsStore';
 import { useElementsStore } from '../../store/useElementsStore';
 import { Radiator } from '../../models/Radiator';
 import { Boiler } from '../../models/Boiler';
-import { Point } from '../../models/PipeSegment';
-import { isPointNearElement, isPointNearPipe } from '../../utils/geometry';
+import { isPointNearPipe } from '../../utils/geometry';
 
 export const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [previewPoint, setPreviewPoint] = useState<Point | null>(null);
   
   // Estado para zoom y pan
   const [zoom, setZoom] = useState(1);
@@ -20,23 +18,18 @@ export const Canvas = () => {
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
   
-  const { tool, pipeType } = useToolsStore();
+  const { tool } = useToolsStore();
   const { 
     radiators, 
     boilers,
     pipes,
-    tempPipe,
-    addRadiator, 
+    addRadiator,
     addBoiler,
     selectedElementId, 
     setSelectedElement, 
     updateRadiatorPosition,
     updateBoilerPosition,
     removeElement,
-    startPipe,
-    addPipePoint,
-    finishPipe,
-    cancelPipe,
   } = useElementsStore();
 
   // Función helper para verificar si un punto está dentro de un radiador
@@ -247,48 +240,15 @@ export const Canvas = () => {
         });
       }
     });
-
-    // Dibujar tubería temporal (preview)
-    if (tempPipe && tempPipe.points.length > 0) {
-      // Color según tipo mientras se dibuja
-      const previewColor = tempPipe.pipeType === 'supply' ? '#D32F2F' : '#29B6F6';
-      ctx.strokeStyle = previewColor;
-      ctx.lineWidth = tempPipe.diameter / 8;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.setLineDash([5, 5]); // Línea punteada
-
-      ctx.beginPath();
-      ctx.moveTo(tempPipe.points[0].x, tempPipe.points[0].y);
-      for (let i = 1; i < tempPipe.points.length; i++) {
-        ctx.lineTo(tempPipe.points[i].x, tempPipe.points[i].y);
-      }
-      
-      // Si hay punto preview, dibujarlo también
-      if (previewPoint) {
-        ctx.lineTo(previewPoint.x, previewPoint.y);
-      }
-      
-      ctx.stroke();
-      ctx.setLineDash([]); // Restaurar línea sólida
-
-      // Dibujar puntos de la tubería temporal
-      tempPipe.points.forEach((point, index) => {
-        ctx.fillStyle = index === 0 ? '#4CAF50' : '#2196F3';
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
     
     // Restaurar estado del contexto
     ctx.restore();
   };
 
-  // Redibujar cuando cambien los radiadores, calderas, pipes, tempPipe, preview o la selección
+  // Redibujar cuando cambien los radiadores, calderas, pipes o la selección
   useEffect(() => {
     draw();
-  }, [radiators, boilers, pipes, tempPipe, previewPoint, selectedElementId, zoom, panOffset]);
+  }, [radiators, boilers, pipes, selectedElementId, zoom, panOffset]);
 
   // Redibujar al montar y al redimensionar
   useEffect(() => {
@@ -297,7 +257,7 @@ export const Canvas = () => {
     return () => window.removeEventListener('resize', draw);
   }, []);
 
-  // Listener de teclado para eliminar elementos y cancelar tuberías
+  // Listener de teclado para eliminar elementos
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Detectar teclas Delete o Backspace
@@ -306,19 +266,11 @@ export const Canvas = () => {
         removeElement(selectedElementId);
         console.log('Elemento eliminado:', selectedElementId);
       }
-      
-      // Detectar tecla Escape para cancelar tubería en progreso
-      if (e.key === 'Escape' && tempPipe) {
-        e.preventDefault();
-        cancelPipe(tempPipe.id);
-        setPreviewPoint(null);
-        console.log('Tubería cancelada');
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, tempPipe, removeElement, cancelPipe]);
+  }, [selectedElementId, removeElement]);
 
   const getMouseCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -442,43 +394,6 @@ export const Canvas = () => {
       }
     }
 
-    // Si la herramienta es "pipe", iniciar o agregar punto a tubería
-    if (tool === 'pipe') {
-      const coords = getMouseCoordinates(e);
-      
-      // Verificar si hay snap a elemento
-      let snapElementId: string | undefined;
-      let snapElementName = '';
-      for (const radiator of radiators) {
-        if (isPointNearElement(coords, radiator)) {
-          snapElementId = radiator.id;
-          snapElementName = 'Radiador';
-          console.log('🎯 SNAP detectado a radiador:', radiator.id);
-          break;
-        }
-      }
-      if (!snapElementId) {
-        for (const boiler of boilers) {
-          if (isPointNearElement(coords, boiler)) {
-            snapElementId = boiler.id;
-            snapElementName = 'Caldera';
-            console.log('🎯 SNAP detectado a caldera:', boiler.id);
-            break;
-          }
-        }
-      }
-
-      if (!tempPipe) {
-        // Iniciar nueva tubería
-        const pipeId = startPipe(coords, pipeType, snapElementId);
-        console.log('Tubería iniciada:', { pipeId, pipeType, fromElementId: snapElementId, snapTo: snapElementName });
-      } else {
-        // Agregar punto a tubería existente
-        addPipePoint(tempPipe.id, coords);
-        console.log('Punto agregado a tubería', { snapElementId, snapTo: snapElementName });
-      }
-    }
-
     console.log('MouseDown:', {
       tool,
       action: 'down',
@@ -508,13 +423,6 @@ export const Canvas = () => {
       }
     }
 
-    // Si hay tubería temporal, mostrar preview
-    if (tempPipe && tempPipe.points.length > 0) {
-      setPreviewPoint(coords);
-    } else {
-      setPreviewPoint(null);
-    }
-
     console.log('MouseMove:', {
       tool,
       action: 'move',
@@ -531,40 +439,6 @@ export const Canvas = () => {
     console.log('MouseUp:', {
       tool,
       action: 'up',
-      coordinates: coords,
-    });
-  };
-
-  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const coords = getMouseCoordinates(e);
-    
-    if (tool === 'pipe' && tempPipe) {
-      // Verificar si el punto final está cerca de un equipo
-      const nearRadiator = radiators.find(r => isPointNearElement(coords, r));
-      const nearBoiler = boilers.find(b => isPointNearElement(coords, b));
-      const toElementId = nearRadiator?.id || nearBoiler?.id;
-      
-      if (toElementId) {
-        console.log('🎯 SNAP final detectado:', {
-          toElementId,
-          tipo: nearRadiator ? 'Radiador' : 'Caldera'
-        });
-      }
-      
-      console.log('Finalizando tubería:', {
-        tempPipeId: tempPipe.id,
-        fromElementId: tempPipe.fromElementId,
-        toElementId,
-        totalPoints: tempPipe.points.length + 1
-      });
-      
-      finishPipe(tempPipe.id, coords, toElementId);
-      setPreviewPoint(null);
-    }
-
-    console.log('DoubleClick:', {
-      tool,
-      action: 'dblclick',
       coordinates: coords,
     });
   };
@@ -622,16 +496,6 @@ export const Canvas = () => {
         maxY = Math.max(maxY, point.y);
       });
     });
-
-    // Tubería temporal
-    if (tempPipe) {
-      tempPipe.points.forEach(point => {
-        minX = Math.min(minX, point.x);
-        minY = Math.min(minY, point.y);
-        maxX = Math.max(maxX, point.x);
-        maxY = Math.max(maxY, point.y);
-      });
-    }
 
     // Calcular centro y dimensiones del bounding box
     const contentWidth = maxX - minX;
@@ -752,8 +616,6 @@ export const Canvas = () => {
 
   // Determinar el cursor según el estado
   const getCursor = () => {
-    if (tool === 'pipe' && tempPipe) return 'crosshair';
-    if (tool === 'pipe') return 'crosshair';
     if (tool === 'select' && isDragging) return 'grabbing';
     if (tool === 'select') return 'default';
     if (tool === 'radiator' || tool === 'boiler') return 'copy';
@@ -767,7 +629,6 @@ export const Canvas = () => {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

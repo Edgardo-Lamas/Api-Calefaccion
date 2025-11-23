@@ -2,11 +2,12 @@ import { useRef, useState, useEffect } from 'react';
 import { useToolsStore } from '../../store/useToolsStore';
 import { useElementsStore } from '../../store/useElementsStore';
 import { saveToLocalStorage, downloadProjectAsJSON, loadProjectFromFile } from '../../utils/projectStorage';
+import { generateAutoPipes } from '../../utils/pipeRouter';
 import './Toolbar.css';
 
 export const Toolbar = () => {
-  const { tool, setTool, pipeType, setPipeType } = useToolsStore();
-  const { radiators, boilers, pipes, projectName, clearAll, loadProject, setProjectName } = useElementsStore();
+  const { tool, setTool } = useToolsStore();
+  const { radiators, boilers, pipes, projectName, clearAll, loadProject, setProjectName, setPipes } = useElementsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -128,6 +129,31 @@ export const Toolbar = () => {
     }
   };
 
+  const handleAutoConnect = () => {
+    if (radiators.length === 0) {
+      alert('⚠️ No hay radiadores para conectar');
+      return;
+    }
+    if (boilers.length === 0) {
+      alert('⚠️ No hay calderas para conectar');
+      return;
+    }
+
+    const confirmed = confirm(
+      `¿Generar tuberías automáticas?\n\n` +
+      `Se conectarán ${radiators.length} radiador(es) a ${boilers.length} caldera(s).\n` +
+      `Las tuberías actuales serán reemplazadas.`
+    );
+
+    if (!confirmed) return;
+
+    // Generar tuberías automáticas
+    const autoPipes = generateAutoPipes(radiators, boilers, 1200, 800);
+    setPipes(autoPipes);
+
+    alert(`✅ ${autoPipes.length} tuberías generadas (${autoPipes.length / 2} pares IDA/RETORNO)`);
+  };
+
   return (
     <div className="toolbar-container">
       <button
@@ -166,50 +192,22 @@ export const Toolbar = () => {
       >
         Caldera
       </button>
+      
       <button
-        onClick={() => setTool('pipe')}
+        onClick={handleAutoConnect}
         style={{
-          backgroundColor: tool === 'pipe' ? '#4CAF50' : '#f0f0f0',
-          color: tool === 'pipe' ? 'white' : 'black',
+          backgroundColor: '#FF6F00',
+          color: 'white',
           padding: '8px 16px',
           border: '1px solid #ccc',
           cursor: 'pointer',
+          fontWeight: 'bold',
         }}
+        title="Generar tuberías automáticamente"
       >
-        Tubería
+        ⚡ Conectar Auto
       </button>
-      {tool === 'pipe' && (
-        <>
-          <button
-            onClick={() => setPipeType('supply')}
-            style={{
-              backgroundColor: pipeType === 'supply' ? '#D32F2F' : '#f0f0f0',
-              color: pipeType === 'supply' ? 'white' : 'black',
-              padding: '8px 16px',
-              border: '1px solid #ccc',
-              cursor: 'pointer',
-              fontWeight: pipeType === 'supply' ? 'bold' : 'normal',
-              minWidth: '100px',
-            }}
-          >
-            🔴 IDA
-          </button>
-          <button
-            onClick={() => setPipeType('return')}
-            style={{
-              backgroundColor: pipeType === 'return' ? '#29B6F6' : '#f0f0f0',
-              color: pipeType === 'return' ? 'white' : 'black',
-              padding: '8px 16px',
-              border: '1px solid #ccc',
-              cursor: 'pointer',
-              fontWeight: pipeType === 'return' ? 'bold' : 'normal',
-              minWidth: '100px',
-            }}
-          >
-            🔵 RETORNO
-          </button>
-        </>
-      )}
+      
       <div style={{ flex: 1 }} />
       
       {/* Input oculto para cargar archivos */}
