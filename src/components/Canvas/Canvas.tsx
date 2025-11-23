@@ -583,6 +583,79 @@ export const Canvas = () => {
     setPanOffset({ x: 0, y: 0 });
   };
 
+  // Encuadrar todos los elementos en el canvas
+  const handleFitAll = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Si no hay elementos, solo resetear
+    if (radiators.length === 0 && boilers.length === 0 && pipes.length === 0) {
+      handleResetZoom();
+      return;
+    }
+
+    // Calcular bounding box de todos los elementos
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    // Radiadores
+    radiators.forEach(rad => {
+      minX = Math.min(minX, rad.x);
+      minY = Math.min(minY, rad.y);
+      maxX = Math.max(maxX, rad.x + rad.width);
+      maxY = Math.max(maxY, rad.y + rad.height);
+    });
+
+    // Calderas
+    boilers.forEach(boiler => {
+      minX = Math.min(minX, boiler.x);
+      minY = Math.min(minY, boiler.y);
+      maxX = Math.max(maxX, boiler.x + boiler.width);
+      maxY = Math.max(maxY, boiler.y + boiler.height);
+    });
+
+    // Tuberías
+    pipes.forEach(pipe => {
+      pipe.points.forEach(point => {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+      });
+    });
+
+    // Tubería temporal
+    if (tempPipe) {
+      tempPipe.points.forEach(point => {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+      });
+    }
+
+    // Calcular centro y dimensiones del bounding box
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    const contentCenterX = minX + contentWidth / 2;
+    const contentCenterY = minY + contentHeight / 2;
+
+    // Calcular zoom para que todo quepa con margen
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const margin = 50; // Margen en píxeles
+
+    const zoomX = (canvasWidth - margin * 2) / contentWidth;
+    const zoomY = (canvasHeight - margin * 2) / contentHeight;
+    const newZoom = Math.min(zoomX, zoomY, 5); // No más de 5x
+
+    // Calcular offset para centrar
+    const newPanX = canvasWidth / 2 - contentCenterX * newZoom;
+    const newPanY = canvasHeight / 2 - contentCenterY * newZoom;
+
+    setZoom(newZoom);
+    setPanOffset({ x: newPanX, y: newPanY });
+  };
+
   // Calcular distancia entre dos puntos táctiles
   const getTouchDistance = (touch1: React.Touch, touch2: React.Touch) => {
     const dx = touch1.clientX - touch2.clientX;
@@ -765,6 +838,22 @@ export const Canvas = () => {
           title="Restablecer Zoom"
         >
           ⟲
+        </button>
+        <button
+          onClick={handleFitAll}
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            border: '2px solid #4CAF50',
+            background: 'white',
+            fontSize: '18px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+          title="Encuadrar Todo"
+        >
+          ⊡
         </button>
       </div>
       
