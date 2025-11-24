@@ -407,8 +407,8 @@ export const Canvas = () => {
         type: 'boiler',
         x: coords.x,
         y: coords.y,
-        width: 50,  // Más angosto (rectángulo)
-        height: 70, // Más alto (vertical)
+        width: 40,  // Vista superior: ancho (profundidad de la caldera)
+        height: 25, // Vista superior: alto (frente de la caldera)
         power: 20640, // Kcal/h (24kW × 860)
       };
 
