@@ -12,6 +12,7 @@ export const RoomPanel: React.FC = () => {
   const { rooms, radiators, addRoom, updateRoom, removeRoom } = useElementsStore();
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Minimizado por defecto
   
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
   
@@ -44,9 +45,36 @@ export const RoomPanel: React.FC = () => {
   // Calcular totales para la caldera
   const boilerCalc = calculateBoilerPower(radiators);
   
+  // Si está colapsado, solo mostrar botón flotante
+  if (isCollapsed) {
+    return (
+      <button
+        onClick={() => setIsCollapsed(false)}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          backgroundColor: '#2196F3',
+          color: 'white',
+          border: 'none',
+          fontSize: '24px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 100
+        }}
+        title="Abrir cálculo de potencia"
+      >
+        📊
+      </button>
+    );
+  }
+  
   return (
     <div style={{
-      position: 'absolute',
+      position: 'fixed',
       top: '80px',
       right: '20px',
       width: '320px',
@@ -57,17 +85,34 @@ export const RoomPanel: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      zIndex: 10
+      zIndex: 100
     }}>
       {/* Header */}
       <div style={{
         padding: '16px',
         borderBottom: '1px solid #e0e0e0',
-        backgroundColor: '#f5f5f5'
+        backgroundColor: '#f5f5f5',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
           Cálculo de Potencia
         </h3>
+        <button
+          onClick={() => setIsCollapsed(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '20px',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            color: '#666'
+          }}
+          title="Minimizar"
+        >
+          ✕
+        </button>
       </div>
       
       {/* Lista de habitaciones */}
@@ -151,16 +196,24 @@ export const RoomPanel: React.FC = () => {
                   <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #eee' }}>
                     <strong>Requerido:</strong> {powerCheck.required.toLocaleString()} Kcal/h
                   </div>
-                  <div>
-                    <strong>Instalado:</strong> {powerCheck.installed.toLocaleString()} Kcal/h
-                  </div>
-                  <div style={{
-                    marginTop: '4px',
-                    color: powerCheck.sufficient ? '#4CAF50' : '#f44336',
-                    fontWeight: 600
-                  }}>
-                    {powerCheck.sufficient ? '✓ Suficiente' : '⚠ Insuficiente'} ({powerCheck.percentage}%)
-                  </div>
+                  {room.radiatorIds.length > 0 ? (
+                    <>
+                      <div>
+                        <strong>Instalado:</strong> {powerCheck.installed.toLocaleString()} Kcal/h
+                      </div>
+                      <div style={{
+                        marginTop: '4px',
+                        color: powerCheck.sufficient ? '#4CAF50' : '#f44336',
+                        fontWeight: 600
+                      }}>
+                        {powerCheck.sufficient ? '✓ Suficiente' : '⚠ Insuficiente'} ({powerCheck.percentage}%)
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ marginTop: '4px', color: '#999', fontSize: '11px' }}>
+                      Sin radiadores asignados
+                    </div>
+                  )}
                 </div>
               </div>
             );
