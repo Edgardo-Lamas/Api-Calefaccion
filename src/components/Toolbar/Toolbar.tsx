@@ -7,7 +7,20 @@ import './Toolbar.css';
 
 export const Toolbar = () => {
   const { tool, setTool } = useToolsStore();
-  const { radiators, boilers, pipes, projectName, clearAll, loadProject, setProjectName, setPipes, setBackgroundImage, updateRadiatorPosition } = useElementsStore();
+  const { 
+    radiators, 
+    boilers, 
+    pipes, 
+    projectName, 
+    backgroundImageDimensions,
+    backgroundImageOffset,
+    clearAll, 
+    loadProject, 
+    setProjectName, 
+    setPipes, 
+    setBackgroundImage, 
+    updateRadiatorPosition 
+  } = useElementsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -149,8 +162,14 @@ export const Toolbar = () => {
 
     if (!confirmed) return;
 
+    // Usar dimensiones del plano si existe, sino dimensiones del canvas
+    const workWidth = backgroundImageDimensions?.width || 1200;
+    const workHeight = backgroundImageDimensions?.height || 800;
+    const offsetX = backgroundImageOffset?.x || 0;
+    const offsetY = backgroundImageOffset?.y || 0;
+
     // Generar tuberías automáticas y obtener nuevas posiciones
-    const result = generateAutoPipes(radiators, boilers, 1200, 800);
+    const result = generateAutoPipes(radiators, boilers, workWidth, workHeight, offsetX, offsetY);
     
     // Actualizar tuberías
     setPipes(result.pipes);

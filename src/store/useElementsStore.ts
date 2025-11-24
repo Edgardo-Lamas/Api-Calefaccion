@@ -14,6 +14,7 @@ interface ElementsStore {
   projectName: string;
   backgroundImage: string | null;
   backgroundImageOffset: { x: number; y: number };
+  backgroundImageDimensions: { width: number; height: number } | null;
   addRadiator: (radiator: Radiator) => void;
   addBoiler: (boiler: Boiler) => void;
   setSelectedElement: (id: string | null) => void;
@@ -30,6 +31,7 @@ interface ElementsStore {
   setPipes: (pipes: PipeSegment[]) => void;
   setBackgroundImage: (imageDataUrl: string | null) => void;
   setBackgroundImageOffset: (offset: { x: number; y: number }) => void;
+  setBackgroundImageDimensions: (dimensions: { width: number; height: number } | null) => void;
   clearAll: () => void;
   loadProject: (project: Project) => void;
   setProjectName: (name: string) => void;
@@ -44,6 +46,7 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   projectName: 'Proyecto sin nombre',
   backgroundImage: null,
   backgroundImageOffset: { x: 0, y: 0 },
+  backgroundImageDimensions: null,
   
   addRadiator: (radiator) => {
     set((state) => ({
@@ -253,6 +256,10 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     set({ backgroundImageOffset: offset });
   },
 
+  setBackgroundImageDimensions: (dimensions) => {
+    set({ backgroundImageDimensions: dimensions });
+  },
+
   clearAll: () => {
     set({
       radiators: [],
@@ -261,6 +268,7 @@ export const useElementsStore = create<ElementsStore>((set) => ({
       tempPipe: null,
       selectedElementId: null,
       backgroundImageOffset: { x: 0, y: 0 },
+      backgroundImageDimensions: null,
     });
   },
 

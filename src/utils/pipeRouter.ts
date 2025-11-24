@@ -9,25 +9,33 @@ interface Point {
 
 /**
  * Detecta pared exterior más cercana y reubica radiador centrado en ella
- * Asume que las paredes exteriores son los bordes del canvas o las más alejadas
  * Los radiadores se colocan PARALELOS a la pared (horizontal en paredes top/bottom, vertical en left/right)
+ * DENTRO del área del plano, no en los bordes del canvas
  */
 function repositionRadiatorToExteriorWall(
   radiator: Radiator,
-  canvasWidth: number,
-  canvasHeight: number
+  planoWidth: number,
+  planoHeight: number,
+  planoOffsetX: number,
+  planoOffsetY: number
 ): { x: number; y: number; width: number; height: number; isRotated: boolean } {
-  const WALL_MARGIN = 30; // Distancia desde la pared
+  const WALL_MARGIN = 30; // Distancia desde la pared INTERIOR del plano
   
   // Dimensiones originales (vista superior: 60x12)
   const originalWidth = 60;
   const originalHeight = 12;
   
-  // Calcular distancias a cada pared
-  const distToTop = radiator.y;
-  const distToBottom = canvasHeight - (radiator.y + radiator.height);
-  const distToLeft = radiator.x;
-  const distToRight = canvasWidth - (radiator.x + radiator.width);
+  // Calcular límites del plano
+  const planoLeft = planoOffsetX;
+  const planoRight = planoOffsetX + planoWidth;
+  const planoTop = planoOffsetY;
+  const planoBottom = planoOffsetY + planoHeight;
+  
+  // Calcular distancias a cada borde DEL PLANO
+  const distToTop = Math.abs(radiator.y - planoTop);
+  const distToBottom = Math.abs((radiator.y + radiator.height) - planoBottom);
+  const distToLeft = Math.abs(radiator.x - planoLeft);
+  const distToRight = Math.abs((radiator.x + radiator.width) - planoRight);
   
   // Encontrar pared exterior más cercana
   const minDist = Math.min(distToTop, distToBottom, distToLeft, distToRight);
@@ -40,23 +48,23 @@ function repositionRadiatorToExteriorWall(
   
   if (minDist === distToTop) {
     // Pared superior - radiador HORIZONTAL (paralelo a la pared)
-    newY = WALL_MARGIN;
+    newY = planoTop + WALL_MARGIN;
     width = originalWidth;  // Largo horizontal
     height = originalHeight; // Ancho vertical
   } else if (minDist === distToBottom) {
     // Pared inferior - radiador HORIZONTAL
-    newY = canvasHeight - originalHeight - WALL_MARGIN;
+    newY = planoBottom - originalHeight - WALL_MARGIN;
     width = originalWidth;
     height = originalHeight;
   } else if (minDist === distToLeft) {
     // Pared izquierda - radiador VERTICAL (perpendicular, rotado 90°)
-    newX = WALL_MARGIN;
+    newX = planoLeft + WALL_MARGIN;
     width = originalHeight;  // Intercambiar: ancho se vuelve alto
     height = originalWidth;  // Largo se vuelve ancho
     isRotated = true;
   } else {
     // Pared derecha - radiador VERTICAL
-    newX = canvasWidth - originalHeight - WALL_MARGIN;
+    newX = planoRight - originalHeight - WALL_MARGIN;
     width = originalHeight;
     height = originalWidth;
     isRotated = true;
@@ -97,12 +105,16 @@ function findShortestPath(start: Point, end: Point): Point[] {
 /**
  * Genera tuberías automáticas con routing optimizado (distancia mínima)
  * También reubica radiadores en paredes exteriores/bajo ventanas
+ * @param offsetX - Offset X del plano de fondo (para calcular límites correctos)
+ * @param offsetY - Offset Y del plano de fondo (para calcular límites correctos)
  */
 export function generateAutoPipes(
   radiators: Radiator[],
   boilers: Boiler[],
   canvasWidth: number = 1200,
-  canvasHeight: number = 800
+  canvasHeight: number = 800,
+  offsetX: number = 0,
+  offsetY: number = 0
 ): {
   pipes: PipeSegment[];
   repositionedRadiators: Array<{ id: string; x: number; y: number; width?: number; height?: number }>;
@@ -131,7 +143,13 @@ export function generateAutoPipes(
   // 2. Reubicar cada radiador en pared exterior y crear conexiones directas
   radiators.forEach(radiator => {
     // Reubicar radiador a pared exterior con orientación correcta
-    const newPosition = repositionRadiatorToExteriorWall(radiator, canvasWidth, canvasHeight);
+    const newPosition = repositionRadiatorToExteriorWall(
+      radiator, 
+      canvasWidth, 
+      canvasHeight, 
+      offsetX, 
+      offsetY
+    );
     repositionedRadiators.push({
       id: radiator.id,
       x: newPosition.x,

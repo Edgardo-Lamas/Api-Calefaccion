@@ -34,7 +34,9 @@ export const Canvas = () => {
     removeElement,
     backgroundImage,
     backgroundImageOffset,
+    backgroundImageDimensions,
     setBackgroundImageOffset,
+    setBackgroundImageDimensions,
   } = useElementsStore();
 
   // Función helper para verificar si un punto está dentro de un radiador
@@ -91,6 +93,13 @@ export const Canvas = () => {
         const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
+        
+        // Guardar dimensiones escaladas si no están guardadas
+        if (!backgroundImageDimensions || 
+            backgroundImageDimensions.width !== scaledWidth || 
+            backgroundImageDimensions.height !== scaledHeight) {
+          setBackgroundImageDimensions({ width: scaledWidth, height: scaledHeight });
+        }
         
         ctx.globalAlpha = 0.6; // Semi-transparente para que se vean los elementos
         ctx.drawImage(
