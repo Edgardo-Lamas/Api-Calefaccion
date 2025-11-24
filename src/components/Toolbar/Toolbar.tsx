@@ -12,6 +12,7 @@ export const Toolbar = () => {
     boilers, 
     pipes, 
     projectName, 
+    backgroundImage,
     backgroundImageDimensions,
     backgroundImageOffset,
     clearAll, 
@@ -214,6 +215,14 @@ export const Toolbar = () => {
     setBackgroundImageOffset({ x: 0, y: 0 });
   };
 
+  const handleRemoveFloorPlan = () => {
+    if (confirm('¿Eliminar el plano de fondo actual?')) {
+      setBackgroundImage(null);
+      setBackgroundImageOffset({ x: 0, y: 0 });
+      console.log('🗑️ Plano de fondo eliminado');
+    }
+  };
+
   const handleFloorPlanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -330,6 +339,23 @@ export const Toolbar = () => {
       >
         📁 Cargar Plano
       </button>
+      
+      {/* Botón Eliminar Plano (solo si hay plano cargado) */}
+      {backgroundImage && (
+        <button
+          onClick={handleRemoveFloorPlan}
+          style={{
+            backgroundColor: '#F44336',
+            color: 'white',
+            padding: '8px 16px',
+            border: '1px solid #ccc',
+            cursor: 'pointer',
+          }}
+          title="Eliminar plano de fondo"
+        >
+          🗑️ Quitar Plano
+        </button>
+      )}
       
       {/* Controles de ajuste del plano (solo si hay plano cargado) */}
       {backgroundImageDimensions && (
