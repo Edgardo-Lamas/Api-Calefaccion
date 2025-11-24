@@ -4,11 +4,13 @@ import { Boiler } from '../models/Boiler';
 import { PipeSegment, Point, PipeType } from '../models/PipeSegment';
 import { ElementBase } from '../models/ElementBase';
 import { Project } from '../utils/projectStorage';
+import { Room } from '../models/Room';
 
 interface ElementsStore {
   radiators: Radiator[];
   boilers: Boiler[];
   pipes: PipeSegment[];
+  rooms: Room[];
   tempPipe: PipeSegment | null;
   selectedElementId: string | null;
   projectName: string;
@@ -17,6 +19,11 @@ interface ElementsStore {
   backgroundImageDimensions: { width: number; height: number } | null;
   addRadiator: (radiator: Radiator) => void;
   addBoiler: (boiler: Boiler) => void;
+  addRoom: (room: Room) => void;
+  updateRoom: (id: string, updates: Partial<Room>) => void;
+  removeRoom: (id: string) => void;
+  assignRadiatorToRoom: (radiatorId: string, roomId: string) => void;
+  unassignRadiatorFromRoom: (radiatorId: string, roomId: string) => void;
   setSelectedElement: (id: string | null) => void;
   updateRadiatorPosition: (id: string, x: number, y: number, width?: number, height?: number) => void;
   rotateRadiator: (id: string) => void;
@@ -42,6 +49,7 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   radiators: [],
   boilers: [],
   pipes: [],
+  rooms: [],
   tempPipe: null,
   selectedElementId: null,
   projectName: 'Proyecto sin nombre',
@@ -58,6 +66,46 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   addBoiler: (boiler) => {
     set((state) => ({
       boilers: [...state.boilers, boiler],
+    }));
+  },
+
+  addRoom: (room) => {
+    set((state) => ({
+      rooms: [...state.rooms, room],
+    }));
+  },
+
+  updateRoom: (id, updates) => {
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === id ? { ...room, ...updates } : room
+      ),
+    }));
+  },
+
+  removeRoom: (id) => {
+    set((state) => ({
+      rooms: state.rooms.filter((room) => room.id !== id),
+    }));
+  },
+
+  assignRadiatorToRoom: (radiatorId, roomId) => {
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === roomId
+          ? { ...room, radiatorIds: [...room.radiatorIds, radiatorId] }
+          : room
+      ),
+    }));
+  },
+
+  unassignRadiatorFromRoom: (radiatorId, roomId) => {
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === roomId
+          ? { ...room, radiatorIds: room.radiatorIds.filter(id => id !== radiatorId) }
+          : room
+      ),
     }));
   },
 
