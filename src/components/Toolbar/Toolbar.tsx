@@ -3,6 +3,7 @@ import { useToolsStore } from '../../store/useToolsStore';
 import { useElementsStore } from '../../store/useElementsStore';
 import { saveToLocalStorage, downloadProjectAsJSON, loadProjectFromFile } from '../../utils/projectStorage';
 import { generateAutoPipes } from '../../utils/pipeRouter';
+import { dimensionPipes } from '../../utils/pipeDimensioning';
 import './Toolbar.css';
 
 export const Toolbar = () => {
@@ -176,6 +177,36 @@ export const Toolbar = () => {
     );
   };
 
+  const handleDimensionPipes = () => {
+    if (pipes.length === 0) {
+      alert('⚠️ No hay tuberías para dimensionar');
+      return;
+    }
+    if (radiators.length === 0) {
+      alert('⚠️ Necesitas radiadores con potencia definida para dimensionar');
+      return;
+    }
+
+    const confirmed = confirm(
+      `¿Dimensionar tuberías automáticamente?\n\n` +
+      `Se calcularán los diámetros óptimos según:\n` +
+      `• Potencia de radiadores\n` +
+      `• Caudal necesario (L/h)\n` +
+      `• Velocidad óptima del agua\n\n` +
+      `Los diámetros actuales serán reemplazados.`
+    );
+
+    if (!confirmed) return;
+
+    const dimensionedPipes = dimensionPipes(pipes, radiators, boilers);
+    setPipes(dimensionedPipes);
+
+    alert(
+      `✅ Tuberías dimensionadas automáticamente\n\n` +
+      `Revisa el panel de propiedades para ver los detalles de cada tubería.`
+    );
+  };
+
   const handleLoadFloorPlan = () => {
     floorPlanInputRef.current?.click();
   };
@@ -299,6 +330,21 @@ export const Toolbar = () => {
         title="Generar tuberías automáticamente"
       >
         ⚡ Conectar Auto
+      </button>
+      
+      <button
+        onClick={handleDimensionPipes}
+        style={{
+          backgroundColor: '#9C27B0',
+          color: 'white',
+          padding: '8px 16px',
+          border: '1px solid #ccc',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+        }}
+        title="Calcular diámetros óptimos según potencia"
+      >
+        📏 Dimensionar
       </button>
       
       <div style={{ flex: 1 }} />

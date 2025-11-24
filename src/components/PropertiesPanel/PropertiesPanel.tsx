@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useElementsStore } from '../../store/useElementsStore';
+import { getPipeDimensionInfo } from '../../utils/pipeDimensioning';
 import './PropertiesPanel.css';
 
 export const PropertiesPanel = () => {
@@ -223,6 +224,49 @@ export const PropertiesPanel = () => {
             <div><strong>Puntos:</strong> {pipe.points?.length || 0}</div>
             <div><strong>Tipo:</strong> {pipe.pipeType === 'supply' ? 'IDA' : 'RETORNO'}</div>
           </div>
+
+          {/* Información de dimensionamiento */}
+          {(() => {
+            const dimensionInfo = getPipeDimensionInfo(pipe, pipes, radiators);
+            return (
+              <div style={{ 
+                padding: '12px',
+                backgroundColor: '#f3e5f5',
+                borderRadius: '4px',
+                fontSize: '12px',
+                marginBottom: '15px',
+                border: '2px solid #9C27B0'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#9C27B0' }}>
+                  📏 Dimensionamiento
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>Radiadores alimentados:</strong> {dimensionInfo.radiatorCount}
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>Potencia total:</strong> {dimensionInfo.totalPower.toLocaleString()} Kcal/h
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>Caudal necesario:</strong> {dimensionInfo.flowRate} L/h
+                </div>
+                <div style={{ 
+                  marginTop: '8px', 
+                  paddingTop: '8px', 
+                  borderTop: '1px solid #9C27B0',
+                  fontWeight: 'bold',
+                  color: dimensionInfo.recommendedDiameter === editedValues.diameter ? '#4CAF50' : '#FF6F00'
+                }}>
+                  Diámetro recomendado: {dimensionInfo.recommendedDiameter} mm
+                  {dimensionInfo.recommendedDiameter === editedValues.diameter ? ' ✓' : ' ⚠'}
+                </div>
+                {dimensionInfo.recommendedDiameter !== editedValues.diameter && (
+                  <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                    Actual: {editedValues.diameter} mm
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           <div style={{ 
             padding: '10px',
