@@ -192,6 +192,13 @@ export const Toolbar = () => {
       return;
     }
 
+    // Verificar que al menos algunos radiadores tengan potencia
+    const radiatorsWithPower = radiators.filter(r => r.power > 0);
+    if (radiatorsWithPower.length === 0) {
+      alert('⚠️ Los radiadores no tienen potencia asignada.\n\nAsigna radiadores a habitaciones primero para calcular su potencia.');
+      return;
+    }
+
     const confirmed = confirm(
       `¿Dimensionar tuberías automáticamente?\n\n` +
       `Se calcularán los diámetros óptimos según:\n` +
