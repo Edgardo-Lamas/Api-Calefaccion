@@ -110,17 +110,42 @@ export const PropertiesPanel = () => {
                 // Desasignar de habitación anterior si existe
                 if (assignedRoom) {
                   unassignRadiatorFromRoom(radiator.id, assignedRoom.id);
+                  
+                  // Redistribuir potencia entre radiadores restantes de la habitación anterior
+                  const remainingRadiators = assignedRoom.radiatorIds.filter(id => id !== radiator.id);
+                  if (remainingRadiators.length > 0) {
+                    const roomPower = calculateRoomPower(assignedRoom);
+                    const powerPerRadiator = Math.round(roomPower / remainingRadiators.length);
+                    remainingRadiators.forEach(radId => {
+                      updateElement(radId, { power: powerPerRadiator } as any);
+                    });
+                  }
                 }
+                
                 // Asignar a nueva habitación
                 if (e.target.value) {
                   const newRoom = rooms.find(r => r.id === e.target.value);
-                  assignRadiatorToRoom(radiator.id, e.target.value);
                   
-                  // AUTOMÁTICO: Calcular y asignar potencia
                   if (newRoom) {
+                    // Primero asignar el radiador a la habitación
+                    assignRadiatorToRoom(radiator.id, e.target.value);
+                    
+                    // AUTOMÁTICO: Calcular potencia total de la habitación
                     const requiredPower = calculateRoomPower(newRoom);
-                    updateElement(radiator.id, { power: requiredPower } as any);
-                    setEditedValues({ ...editedValues, power: requiredPower });
+                    
+                    // Contar cuántos radiadores habrá en total (incluyendo este)
+                    const totalRadiatorsInRoom = newRoom.radiatorIds.length + 1;
+                    
+                    // Dividir la potencia entre todos los radiadores
+                    const powerPerRadiator = Math.round(requiredPower / totalRadiatorsInRoom);
+                    
+                    // Asignar potencia a TODOS los radiadores de la habitación (incluyendo este)
+                    const allRadiatorIds = [...newRoom.radiatorIds, radiator.id];
+                    allRadiatorIds.forEach(radId => {
+                      updateElement(radId, { power: powerPerRadiator } as any);
+                    });
+                    
+                    setEditedValues({ ...editedValues, power: powerPerRadiator });
                   }
                 } else {
                   // Si desasigna, poner potencia en 0
