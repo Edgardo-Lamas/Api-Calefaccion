@@ -133,48 +133,138 @@ export function generateAutoPipes(
     y: boiler.y + boiler.height / 2
   };
 
-  // 2. Conectar cada radiador DESDE SU POSICIÓN ACTUAL (sin mover)
-  radiators.forEach(radiator => {
-    // Punto de conexión del radiador (donde están las conexiones dibujadas)
-    // Detectar orientación: si height > width, está vertical
+  // 2. Calcular paths completos para cada radiador
+  interface RadiatorPath {
+    radiatorId: string;
+    connection: Point;
+    path: Point[];
+    isVertical: boolean;
+  }
+  
+  const radiatorPaths: RadiatorPath[] = radiators.map(radiator => {
     const isVertical = radiator.height > radiator.width;
-    
-    const radiatorConnection = {
+    const connection = {
       x: isVertical ? radiator.x + radiator.width / 3 : radiator.x + 10,
       y: isVertical ? radiator.y + 10 : radiator.y + radiator.height / 2
     };
+    const path = findShortestPath(boilerCenter, connection);
+    
+    return { radiatorId: radiator.id, connection, path, isVertical };
+  });
 
-    // 3. Crear path más corto desde caldera a radiador
-    const shortestPath = findShortestPath(boilerCenter, radiatorConnection);
+  // 3. Detectar puntos de ramificación (donde los paths se dividen)
+  // Un path L-shape tiene 3 puntos: [start, corner, end]
+  // Los paths se ramifican en el "corner" si comparten la misma dirección inicial
+  
+  const PARALLEL_OFFSET = 8;
+  
+  // Agrupar radiadores por dirección inicial desde la caldera
+  const pathGroups = new Map<string, RadiatorPath[]>();
+  
+  radiatorPaths.forEach(rp => {
+    // La dirección se define por el segundo punto (corner)
+    const corner = rp.path[1];
+    const key = `${corner.x},${corner.y}`;
+    
+    if (!pathGroups.has(key)) {
+      pathGroups.set(key, []);
+    }
+    pathGroups.get(key)!.push(rp);
+  });
 
-    // 4. TUBERÍA IDA (roja)
-    pipes.push({
-      id: `pipe-supply-${pipeIdCounter++}`,
-      type: 'pipe',
-      pipeType: 'supply',
-      points: shortestPath,
-      diameter: 20,
-      material: 'Multicapa',
-    });
-
-    // 5. TUBERÍA RETORNO (azul) - paralela con offset
-    const PARALLEL_OFFSET = 8;
-    const returnPath = shortestPath.map(p => ({
-      x: p.x + PARALLEL_OFFSET,
-      y: p.y + PARALLEL_OFFSET
-    }));
-
-    pipes.push({
-      id: `pipe-return-${pipeIdCounter++}`,
-      type: 'pipe',
-      pipeType: 'return',
-      points: returnPath,
-      diameter: 20,
-      material: 'Multicapa',
-    });
+  // 4. Generar tuberías segmentadas
+  pathGroups.forEach((group) => {
+    if (group.length === 1) {
+      // Solo 1 radiador en esta dirección: tubería completa desde caldera
+      const rp = group[0];
+      
+      // IDA
+      pipes.push({
+        id: `pipe-supply-${pipeIdCounter++}`,
+        type: 'pipe',
+        pipeType: 'supply',
+        points: rp.path,
+        diameter: 20,
+        material: 'Multicapa',
+      });
+      
+      // RETORNO
+      const returnPath = rp.path.map(p => ({
+        x: p.x + PARALLEL_OFFSET,
+        y: p.y + PARALLEL_OFFSET
+      }));
+      pipes.push({
+        id: `pipe-return-${pipeIdCounter++}`,
+        type: 'pipe',
+        pipeType: 'return',
+        points: returnPath,
+        diameter: 20,
+        material: 'Multicapa',
+      });
+      
+    } else {
+      // Múltiples radiadores comparten el tramo inicial
+      // Crear: 1 tramo común + N tramos individuales
+      
+      const commonStart = group[0].path[0]; // Caldera
+      const commonCorner = group[0].path[1]; // Punto de ramificación
+      
+      // TRAMO COMÚN (caldera → punto de ramificación)
+      const commonPath = [commonStart, commonCorner];
+      
+      pipes.push({
+        id: `pipe-supply-common-${pipeIdCounter++}`,
+        type: 'pipe',
+        pipeType: 'supply',
+        points: commonPath,
+        diameter: 25, // Diámetro mayor para tramo principal
+        material: 'Multicapa',
+      });
+      
+      const commonReturnPath = commonPath.map(p => ({
+        x: p.x + PARALLEL_OFFSET,
+        y: p.y + PARALLEL_OFFSET
+      }));
+      pipes.push({
+        id: `pipe-return-common-${pipeIdCounter++}`,
+        type: 'pipe',
+        pipeType: 'return',
+        points: commonReturnPath,
+        diameter: 25,
+        material: 'Multicapa',
+      });
+      
+      // TRAMOS INDIVIDUALES (ramificación → cada radiador)
+      group.forEach(rp => {
+        const branchPath = [commonCorner, rp.path[2]]; // Desde ramificación hasta radiador
+        
+        pipes.push({
+          id: `pipe-supply-${pipeIdCounter++}`,
+          type: 'pipe',
+          pipeType: 'supply',
+          points: branchPath,
+          diameter: 20,
+          material: 'Multicapa',
+        });
+        
+        const branchReturnPath = branchPath.map(p => ({
+          x: p.x + PARALLEL_OFFSET,
+          y: p.y + PARALLEL_OFFSET
+        }));
+        pipes.push({
+          id: `pipe-return-${pipeIdCounter++}`,
+          type: 'pipe',
+          pipeType: 'return',
+          points: branchReturnPath,
+          diameter: 20,
+          material: 'Multicapa',
+        });
+      });
+    }
   });
 
   console.log(`✅ Generadas ${pipes.length} tuberías (${pipes.length / 2} pares IDA/RETORNO)`);
+  console.log(`📍 ${pathGroups.size} grupos de ramificación detectados`);
   console.log(`📍 Radiadores mantienen su posición actual (no reubicados)`);
   
   return { pipes, repositionedRadiators: [] };
