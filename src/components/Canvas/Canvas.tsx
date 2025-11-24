@@ -109,6 +109,9 @@ export const Canvas = () => {
 
     // Dibujar todos los radiadores (VISTA SUPERIOR COMPACTA)
     radiators.forEach((radiator) => {
+      // Detectar orientación: si height > width, está vertical (rotado 90°)
+      const isVertical = radiator.height > radiator.width;
+      
       // Fondo del radiador (color rojo/naranja como en planos)
       ctx.fillStyle = '#E57373';
       ctx.fillRect(radiator.x, radiator.y, radiator.width, radiator.height);
@@ -125,34 +128,64 @@ export const Canvas = () => {
         ctx.strokeRect(radiator.x - 2, radiator.y - 2, radiator.width + 4, radiator.height + 4);
       }
 
-      // Líneas internas verticales (simulando elementos internos)
+      // Líneas internas (simulando elementos internos)
       ctx.strokeStyle = '#B71C1C';
       ctx.lineWidth = 0.5;
       const numLines = 4;
-      const lineSpacing = radiator.width / (numLines + 1);
-      for (let i = 1; i <= numLines; i++) {
-        const lineX = radiator.x + lineSpacing * i;
-        ctx.beginPath();
-        ctx.moveTo(lineX, radiator.y + 1);
-        ctx.lineTo(lineX, radiator.y + radiator.height - 1);
-        ctx.stroke();
+      
+      if (isVertical) {
+        // Radiador VERTICAL: líneas horizontales
+        const lineSpacing = radiator.height / (numLines + 1);
+        for (let i = 1; i <= numLines; i++) {
+          const lineY = radiator.y + lineSpacing * i;
+          ctx.beginPath();
+          ctx.moveTo(radiator.x + 1, lineY);
+          ctx.lineTo(radiator.x + radiator.width - 1, lineY);
+          ctx.stroke();
+        }
+      } else {
+        // Radiador HORIZONTAL: líneas verticales
+        const lineSpacing = radiator.width / (numLines + 1);
+        for (let i = 1; i <= numLines; i++) {
+          const lineX = radiator.x + lineSpacing * i;
+          ctx.beginPath();
+          ctx.moveTo(lineX, radiator.y + 1);
+          ctx.lineTo(lineX, radiator.y + radiator.height - 1);
+          ctx.stroke();
+        }
       }
 
       // Conexiones de tubería (2 puntos pequeños en un extremo)
       const connectionSize = 2;
       const connectionOffset = 5;
       
-      // Conexión IDA (izquierda)
-      ctx.fillStyle = '#D32F2F';
-      ctx.beginPath();
-      ctx.arc(radiator.x + connectionOffset, radiator.y + radiator.height / 3, connectionSize, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Conexión RETORNO (izquierda abajo)
-      ctx.fillStyle = '#29B6F6';
-      ctx.beginPath();
-      ctx.arc(radiator.x + connectionOffset, radiator.y + 2 * radiator.height / 3, connectionSize, 0, Math.PI * 2);
-      ctx.fill();
+      if (isVertical) {
+        // Conexiones en la parte superior (horizontal)
+        // Conexión IDA (arriba izquierda)
+        ctx.fillStyle = '#D32F2F';
+        ctx.beginPath();
+        ctx.arc(radiator.x + radiator.width / 3, radiator.y + connectionOffset, connectionSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Conexión RETORNO (arriba derecha)
+        ctx.fillStyle = '#29B6F6';
+        ctx.beginPath();
+        ctx.arc(radiator.x + 2 * radiator.width / 3, radiator.y + connectionOffset, connectionSize, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Conexiones en el lado izquierdo (vertical)
+        // Conexión IDA (izquierda arriba)
+        ctx.fillStyle = '#D32F2F';
+        ctx.beginPath();
+        ctx.arc(radiator.x + connectionOffset, radiator.y + radiator.height / 3, connectionSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Conexión RETORNO (izquierda abajo)
+        ctx.fillStyle = '#29B6F6';
+        ctx.beginPath();
+        ctx.arc(radiator.x + connectionOffset, radiator.y + 2 * radiator.height / 3, connectionSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Mostrar potencia solo si está seleccionado (para no saturar)
       if (radiator.id === selectedElementId) {
@@ -442,6 +475,9 @@ export const Canvas = () => {
         console.log('Tubería seleccionada:', foundPipeId);
       } else {
         // No se encontró ningún elemento
+        setSelectedElement(null);
+        setIsDragging(false);
+        
         // Si hay imagen de fondo, permitir arrastrarla
         if (backgroundImage) {
           setIsDraggingBackground(true);
@@ -451,8 +487,6 @@ export const Canvas = () => {
           });
           console.log('Arrastrando plano de fondo');
         } else {
-          setSelectedElement(null);
-          setIsDragging(false);
           console.log('Deseleccionado');
         }
       }

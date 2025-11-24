@@ -10,13 +10,18 @@ interface Point {
 /**
  * Detecta pared exterior más cercana y reubica radiador centrado en ella
  * Asume que las paredes exteriores son los bordes del canvas o las más alejadas
+ * Los radiadores se colocan PARALELOS a la pared (horizontal en paredes top/bottom, vertical en left/right)
  */
 function repositionRadiatorToExteriorWall(
   radiator: Radiator,
   canvasWidth: number,
   canvasHeight: number
-): { x: number; y: number } {
+): { x: number; y: number; width: number; height: number; isRotated: boolean } {
   const WALL_MARGIN = 30; // Distancia desde la pared
+  
+  // Dimensiones originales (vista superior: 60x12)
+  const originalWidth = 60;
+  const originalHeight = 12;
   
   // Calcular distancias a cada pared
   const distToTop = radiator.y;
@@ -24,28 +29,40 @@ function repositionRadiatorToExteriorWall(
   const distToLeft = radiator.x;
   const distToRight = canvasWidth - (radiator.x + radiator.width);
   
-  // Encontrar pared exterior más cercana (suponiendo que es la más cercana al borde)
+  // Encontrar pared exterior más cercana
   const minDist = Math.min(distToTop, distToBottom, distToLeft, distToRight);
   
   let newX = radiator.x;
   let newY = radiator.y;
+  let width = originalWidth;
+  let height = originalHeight;
+  let isRotated = false;
   
   if (minDist === distToTop) {
-    // Pared superior (exterior) - centrar horizontalmente
+    // Pared superior - radiador HORIZONTAL (paralelo a la pared)
     newY = WALL_MARGIN;
-    // Mantener X o centrar en la habitación estimada
+    width = originalWidth;  // Largo horizontal
+    height = originalHeight; // Ancho vertical
   } else if (minDist === distToBottom) {
-    // Pared inferior (exterior)
-    newY = canvasHeight - radiator.height - WALL_MARGIN;
+    // Pared inferior - radiador HORIZONTAL
+    newY = canvasHeight - originalHeight - WALL_MARGIN;
+    width = originalWidth;
+    height = originalHeight;
   } else if (minDist === distToLeft) {
-    // Pared izquierda (exterior) - centrar verticalmente
+    // Pared izquierda - radiador VERTICAL (perpendicular, rotado 90°)
     newX = WALL_MARGIN;
+    width = originalHeight;  // Intercambiar: ancho se vuelve alto
+    height = originalWidth;  // Largo se vuelve ancho
+    isRotated = true;
   } else {
-    // Pared derecha (exterior)
-    newX = canvasWidth - radiator.width - WALL_MARGIN;
+    // Pared derecha - radiador VERTICAL
+    newX = canvasWidth - originalHeight - WALL_MARGIN;
+    width = originalHeight;
+    height = originalWidth;
+    isRotated = true;
   }
   
-  return { x: newX, y: newY };
+  return { x: newX, y: newY, width, height, isRotated };
 }
 
 /**
@@ -88,7 +105,7 @@ export function generateAutoPipes(
   canvasHeight: number = 800
 ): {
   pipes: PipeSegment[];
-  repositionedRadiators: Array<{ id: string; x: number; y: number }>;
+  repositionedRadiators: Array<{ id: string; x: number; y: number; width?: number; height?: number }>;
 } {
   if (boilers.length === 0) {
     console.warn('⚠️ No hay calderas para conectar');
@@ -101,7 +118,7 @@ export function generateAutoPipes(
   }
 
   const pipes: PipeSegment[] = [];
-  const repositionedRadiators: Array<{ id: string; x: number; y: number }> = [];
+  const repositionedRadiators: Array<{ id: string; x: number; y: number; width?: number; height?: number }> = [];
   let pipeIdCounter = Date.now();
   
   // 1. Caldera principal
@@ -113,18 +130,21 @@ export function generateAutoPipes(
 
   // 2. Reubicar cada radiador en pared exterior y crear conexiones directas
   radiators.forEach(radiator => {
-    // Reubicar radiador a pared exterior
+    // Reubicar radiador a pared exterior con orientación correcta
     const newPosition = repositionRadiatorToExteriorWall(radiator, canvasWidth, canvasHeight);
     repositionedRadiators.push({
       id: radiator.id,
       x: newPosition.x,
-      y: newPosition.y
+      y: newPosition.y,
+      width: newPosition.width,
+      height: newPosition.height
     });
     
     // Punto de conexión del radiador (donde están las conexiones dibujadas)
+    // Ajustar según si está rotado o no
     const radiatorConnection = {
       x: newPosition.x + 10, // Donde dibujamos los puntos de conexión
-      y: newPosition.y + radiator.height / 2
+      y: newPosition.y + newPosition.height / 2
     };
 
     // 3. Crear path más corto desde caldera a radiador

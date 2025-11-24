@@ -155,9 +155,9 @@ export const Toolbar = () => {
     // Actualizar tuberías
     setPipes(result.pipes);
     
-    // Reubicar radiadores en paredes exteriores
-    result.repositionedRadiators.forEach(({ id, x, y }) => {
-      updateRadiatorPosition(id, x, y);
+    // Reubicar radiadores en paredes exteriores con orientación correcta
+    result.repositionedRadiators.forEach(({ id, x, y, width, height }) => {
+      updateRadiatorPosition(id, x, y, width, height);
     });
 
     alert(
