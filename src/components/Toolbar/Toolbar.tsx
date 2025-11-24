@@ -248,9 +248,11 @@ export const Toolbar = () => {
         style={{
           backgroundColor: tool === 'select' ? '#4CAF50' : '#f0f0f0',
           color: tool === 'select' ? 'white' : 'black',
-          padding: '8px 16px',
+          padding: '6px 12px',
           border: '1px solid #ccc',
           cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          fontSize: '14px',
         }}
       >
         Seleccionar
@@ -260,9 +262,11 @@ export const Toolbar = () => {
         style={{
           backgroundColor: tool === 'radiator' ? '#4CAF50' : '#f0f0f0',
           color: tool === 'radiator' ? 'white' : 'black',
-          padding: '8px 16px',
+          padding: '6px 12px',
           border: '1px solid #ccc',
           cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          fontSize: '14px',
         }}
       >
         Radiador
@@ -272,9 +276,11 @@ export const Toolbar = () => {
         style={{
           backgroundColor: tool === 'boiler' ? '#4CAF50' : '#f0f0f0',
           color: tool === 'boiler' ? 'white' : 'black',
-          padding: '8px 16px',
+          padding: '6px 12px',
           border: '1px solid #ccc',
           cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          fontSize: '14px',
         }}
       >
         Caldera

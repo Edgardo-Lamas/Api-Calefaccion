@@ -256,7 +256,9 @@ export const Canvas = () => {
       if (isSelected) baseColor = '#FF9800'; // Naranja si está seleccionada
       
       ctx.strokeStyle = baseColor;
-      ctx.lineWidth = isSelected ? 2.5 : 1.5; // Líneas finas y proporcionales
+      // Grosor proporcional al diámetro: 16mm=2px, 20mm=2.5px, 25mm=3.1px, 32mm=4px
+      const baseWidth = pipe.diameter / 8;
+      ctx.lineWidth = isSelected ? baseWidth + 1 : baseWidth;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.setLineDash([]); // Línea sólida
