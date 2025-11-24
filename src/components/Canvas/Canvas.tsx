@@ -396,7 +396,7 @@ export const Canvas = () => {
         y: coords.y,
         width: 60,  // Vista superior: más angosto
         height: 12, // Vista superior: muy bajo (franja)
-        power: 2000, // Kcal/h (valor típico inicial)
+        power: 0, // Sin potencia hasta asignar a habitación o definir manualmente
       };
 
       addRadiator(newRadiator);

@@ -173,7 +173,9 @@ export const Toolbar = () => {
     setPipes(result.pipes);
 
     alert(
-      `✅ ${result.pipes.length} tuberías generadas (${result.pipes.length / 2} pares IDA/RETORNO)`
+      `✅ ${result.pipes.length} tuberías generadas (${result.pipes.length / 2} pares IDA/RETORNO)\n\n` +
+      `💡 IMPORTANTE: Las tuberías tienen diámetro por defecto (16mm).\n` +
+      `Haz click en "📏 Dimensionar" para calcular los diámetros óptimos según la potencia.`
     );
   };
 

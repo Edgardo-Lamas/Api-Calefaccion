@@ -12,7 +12,7 @@ export const RoomPanel: React.FC = () => {
   const { rooms, radiators, addRoom, updateRoom, removeRoom } = useElementsStore();
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true); // Minimizado por defecto
+  const [isCollapsed, setIsCollapsed] = useState(false); // Abierto por defecto para ver cálculos
   
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
   

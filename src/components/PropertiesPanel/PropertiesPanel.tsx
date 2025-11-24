@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useElementsStore } from '../../store/useElementsStore';
 import { getPipeDimensionInfo } from '../../utils/pipeDimensioning';
+import { calculateRoomPower } from '../../utils/thermalCalculator';
 import './PropertiesPanel.css';
 
 export const PropertiesPanel = () => {
-  const { radiators, boilers, pipes, selectedElementId, updateElement, removeElement, setSelectedElement } = useElementsStore();
+  const { 
+    radiators, 
+    boilers, 
+    pipes, 
+    rooms,
+    selectedElementId, 
+    updateElement, 
+    removeElement, 
+    setSelectedElement,
+    assignRadiatorToRoom,
+    unassignRadiatorFromRoom
+  } = useElementsStore();
   
   // Encontrar el elemento seleccionado
   const selectedElement = 
@@ -78,19 +90,98 @@ export const PropertiesPanel = () => {
   // Renderizar según tipo de elemento
   const renderProperties = () => {
     if (selectedElement.type === 'radiator') {
+      const radiator = selectedElement;
+      
+      // Encontrar si está asignado a alguna habitación
+      const assignedRoom = rooms.find(r => r.radiatorIds.includes(radiator.id));
+      
       return (
         <>
           <h3>🔲 Radiador</h3>
           
+          {/* Asignar a habitación */}
           <div className="property-field">
             <label>
-              Potencia (W)
+              Asignar a habitación:
+            </label>
+            <select
+              value={assignedRoom?.id || ''}
+              onChange={(e) => {
+                // Desasignar de habitación anterior si existe
+                if (assignedRoom) {
+                  unassignRadiatorFromRoom(radiator.id, assignedRoom.id);
+                }
+                // Asignar a nueva habitación
+                if (e.target.value) {
+                  const newRoom = rooms.find(r => r.id === e.target.value);
+                  assignRadiatorToRoom(radiator.id, e.target.value);
+                  
+                  // AUTOMÁTICO: Calcular y asignar potencia
+                  if (newRoom) {
+                    const requiredPower = calculateRoomPower(newRoom);
+                    updateElement(radiator.id, { power: requiredPower } as any);
+                    setEditedValues({ ...editedValues, power: requiredPower });
+                  }
+                } else {
+                  // Si desasigna, poner potencia en 0
+                  updateElement(radiator.id, { power: 0 } as any);
+                  setEditedValues({ ...editedValues, power: 0 });
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '8px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                fontSize: '14px'
+              }}
+            >
+              <option value="">-- Sin asignar --</option>
+              {rooms.map(room => (
+                <option key={room.id} value={room.id}>
+                  {room.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Mostrar potencia calculada si está asignado */}
+          {assignedRoom && (
+            <div style={{ 
+              padding: '10px',
+              backgroundColor: '#E8F5E9',
+              borderRadius: '4px',
+              marginBottom: '15px',
+              fontSize: '12px'
+            }}>
+              <div style={{ fontWeight: 'bold', color: '#2E7D32', marginBottom: '4px' }}>
+                ✓ Asignado a "{assignedRoom.name}"
+              </div>
+              <div style={{ fontSize: '11px', color: '#1B5E20' }}>
+                Potencia calculada automáticamente
+              </div>
+            </div>
+          )}
+          
+          <div className="property-field">
+            <label>
+              Potencia (Kcal/h)
             </label>
             <input
               type="number"
               value={editedValues.power || 0}
               onChange={(e) => handleChange('power', Number(e.target.value))}
+              disabled={!!assignedRoom}
+              style={{
+                backgroundColor: assignedRoom ? '#f5f5f5' : 'white',
+                cursor: assignedRoom ? 'not-allowed' : 'text'
+              }}
             />
+            {assignedRoom && (
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                💡 Potencia asignada automáticamente. Desasigna la habitación para editar manualmente.
+              </div>
+            )}
           </div>
 
           <div className="property-field">

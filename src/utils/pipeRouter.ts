@@ -184,7 +184,7 @@ export function generateAutoPipes(
         type: 'pipe',
         pipeType: 'supply',
         points: rp.path,
-        diameter: 20,
+        diameter: 16, // Default sin dimensionar
         material: 'Multicapa',
       });
       
@@ -198,7 +198,7 @@ export function generateAutoPipes(
         type: 'pipe',
         pipeType: 'return',
         points: returnPath,
-        diameter: 20,
+        diameter: 16, // Default sin dimensionar
         material: 'Multicapa',
       });
       
@@ -217,7 +217,7 @@ export function generateAutoPipes(
         type: 'pipe',
         pipeType: 'supply',
         points: commonPath,
-        diameter: 25, // Diámetro mayor para tramo principal
+        diameter: 16, // Default sin dimensionar - se calculará luego
         material: 'Multicapa',
       });
       
@@ -230,7 +230,7 @@ export function generateAutoPipes(
         type: 'pipe',
         pipeType: 'return',
         points: commonReturnPath,
-        diameter: 25,
+        diameter: 16, // Default sin dimensionar
         material: 'Multicapa',
       });
       
@@ -243,7 +243,7 @@ export function generateAutoPipes(
           type: 'pipe',
           pipeType: 'supply',
           points: branchPath,
-          diameter: 20,
+          diameter: 16, // Default sin dimensionar
           material: 'Multicapa',
         });
         
@@ -256,7 +256,7 @@ export function generateAutoPipes(
           type: 'pipe',
           pipeType: 'return',
           points: branchReturnPath,
-          diameter: 20,
+          diameter: 16, // Default sin dimensionar
           material: 'Multicapa',
         });
       });
