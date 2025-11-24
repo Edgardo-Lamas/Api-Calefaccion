@@ -494,7 +494,14 @@ export const Canvas = () => {
             x: coords.x - backgroundImageOffset.x,
             y: coords.y - backgroundImageOffset.y,
           });
-          console.log('Arrastrando plano de fondo');
+          console.log('🖼️ Iniciando arrastre de plano:', {
+            coords,
+            backgroundImageOffset,
+            dragStart: {
+              x: coords.x - backgroundImageOffset.x,
+              y: coords.y - backgroundImageOffset.y,
+            }
+          });
         } else {
           console.log('Deseleccionado');
         }
@@ -516,6 +523,7 @@ export const Canvas = () => {
     if (isDraggingBackground) {
       const newOffsetX = coords.x - backgroundDragStart.x;
       const newOffsetY = coords.y - backgroundDragStart.y;
+      console.log('🖼️ Moviendo plano:', { coords, backgroundDragStart, newOffset: { x: newOffsetX, y: newOffsetY } });
       setBackgroundImageOffset({ x: newOffsetX, y: newOffsetY });
       return;
     }
