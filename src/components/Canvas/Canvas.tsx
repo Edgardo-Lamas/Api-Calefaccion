@@ -23,6 +23,7 @@ export const Canvas = () => {
     radiators, 
     boilers,
     pipes,
+    rooms,
     addRadiator,
     addBoiler,
     selectedElementId, 
@@ -194,8 +195,38 @@ export const Canvas = () => {
         ctx.fill();
       }
 
-      // Mostrar potencia solo si está seleccionado (para no saturar)
-      if (radiator.id === selectedElementId) {
+      // Mostrar potencia y nombre de habitación
+      const assignedRoom = rooms.find(r => r.radiatorIds.includes(radiator.id));
+      
+      if (assignedRoom) {
+        // Mostrar nombre de habitación
+        ctx.fillStyle = '#1976D2';
+        ctx.font = 'bold 11px Arial';
+        const roomNameText = assignedRoom.name;
+        const textWidth = ctx.measureText(roomNameText).width;
+        
+        // Posición del texto (al lado derecho del radiador)
+        const textX = radiator.x + radiator.width + 8;
+        const textY = radiator.y + radiator.height / 2 - 5;
+        
+        // Fondo blanco semitransparente para el texto
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(textX - 2, textY - 10, textWidth + 4, 14);
+        
+        // Texto del nombre
+        ctx.fillStyle = '#1976D2';
+        ctx.fillText(roomNameText, textX, textY);
+        
+        // Mostrar potencia debajo del nombre
+        ctx.fillStyle = '#666';
+        ctx.font = '9px Arial';
+        ctx.fillText(
+          `${radiator.power.toLocaleString()} Kcal/h`,
+          textX,
+          textY + 12
+        );
+      } else if (radiator.id === selectedElementId) {
+        // Si no está asignado, solo mostrar potencia cuando está seleccionado
         ctx.fillStyle = '#333';
         ctx.font = '9px Arial';
         ctx.fillText(
