@@ -30,6 +30,7 @@ export const Canvas = () => {
     updateRadiatorPosition,
     updateBoilerPosition,
     removeElement,
+    backgroundImage,
   } = useElementsStore();
 
   // Función helper para verificar si un punto está dentro de un radiador
@@ -74,6 +75,27 @@ export const Canvas = () => {
     // Aplicar transformaciones de zoom y pan
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoom, zoom);
+
+    // Dibujar imagen de fondo del plano (si existe)
+    if (backgroundImage) {
+      const img = new Image();
+      img.src = backgroundImage;
+      
+      // Solo dibujar si la imagen ya está cargada
+      if (img.complete) {
+        // Ajustar imagen al canvas manteniendo aspect ratio
+        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
+        
+        ctx.globalAlpha = 0.6; // Semi-transparente para que se vean los elementos
+        ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+        ctx.globalAlpha = 1.0; // Restaurar opacidad
+      } else {
+        // Cargar imagen si no está en caché
+        img.onload = () => draw();
+      }
+    }
 
     // Dibujar todos los radiadores
     radiators.forEach((radiator) => {
@@ -245,10 +267,10 @@ export const Canvas = () => {
     ctx.restore();
   };
 
-  // Redibujar cuando cambien los radiadores, calderas, pipes o la selección
+  // Redibujar cuando cambien los radiadores, calderas, pipes, backgroundImage o la selección
   useEffect(() => {
     draw();
-  }, [radiators, boilers, pipes, selectedElementId, zoom, panOffset]);
+  }, [radiators, boilers, pipes, selectedElementId, zoom, panOffset, backgroundImage]);
 
   // Redibujar al montar y al redimensionar
   useEffect(() => {

@@ -12,6 +12,7 @@ interface ElementsStore {
   tempPipe: PipeSegment | null;
   selectedElementId: string | null;
   projectName: string;
+  backgroundImage: string | null;
   addRadiator: (radiator: Radiator) => void;
   addBoiler: (boiler: Boiler) => void;
   setSelectedElement: (id: string | null) => void;
@@ -26,6 +27,7 @@ interface ElementsStore {
   removeElement: (id: string) => void;
   moveElement: (id: string, x: number, y: number) => void;
   setPipes: (pipes: PipeSegment[]) => void;
+  setBackgroundImage: (imageDataUrl: string | null) => void;
   clearAll: () => void;
   loadProject: (project: Project) => void;
   setProjectName: (name: string) => void;
@@ -38,6 +40,7 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   tempPipe: null,
   selectedElementId: null,
   projectName: 'Proyecto sin nombre',
+  backgroundImage: null,
   
   addRadiator: (radiator) => {
     set((state) => ({
@@ -234,6 +237,11 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   setPipes: (pipes) => {
     set({ pipes });
     console.log(`✅ ${pipes.length} tuberías actualizadas en el store`);
+  },
+
+  setBackgroundImage: (imageDataUrl) => {
+    set({ backgroundImage: imageDataUrl });
+    console.log(imageDataUrl ? '✅ Imagen de plano cargada' : '🧼 Imagen de plano eliminada');
   },
 
   clearAll: () => {

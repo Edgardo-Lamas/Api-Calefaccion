@@ -7,8 +7,9 @@ import './Toolbar.css';
 
 export const Toolbar = () => {
   const { tool, setTool } = useToolsStore();
-  const { radiators, boilers, pipes, projectName, clearAll, loadProject, setProjectName, setPipes } = useElementsStore();
+  const { radiators, boilers, pipes, projectName, clearAll, loadProject, setProjectName, setPipes, setBackgroundImage } = useElementsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const floorPlanInputRef = useRef<HTMLInputElement>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -148,10 +149,42 @@ export const Toolbar = () => {
     if (!confirmed) return;
 
     // Generar tuberías automáticas
-    const autoPipes = generateAutoPipes(radiators, boilers, 1200, 800);
+    const autoPipes = generateAutoPipes(radiators, boilers);
     setPipes(autoPipes);
 
     alert(`✅ ${autoPipes.length} tuberías generadas (${autoPipes.length / 2} pares IDA/RETORNO)`);
+  };
+
+  const handleLoadFloorPlan = () => {
+    floorPlanInputRef.current?.click();
+  };
+
+  const handleFloorPlanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar que sea imagen
+    if (!file.type.startsWith('image/')) {
+      alert('⚠️ Solo se permiten imágenes (PNG, JPG, JPEG)');
+      return;
+    }
+
+    // Leer imagen como Data URL
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageDataUrl = event.target?.result as string;
+      setBackgroundImage(imageDataUrl);
+      console.log('✅ Plano de fondo cargado');
+    };
+    reader.onerror = () => {
+      alert('❌ Error al cargar la imagen');
+    };
+    reader.readAsDataURL(file);
+
+    // Resetear input
+    if (floorPlanInputRef.current) {
+      floorPlanInputRef.current.value = '';
+    }
   };
 
   return (
@@ -210,7 +243,7 @@ export const Toolbar = () => {
       
       <div style={{ flex: 1 }} />
       
-      {/* Input oculto para cargar archivos */}
+      {/* Input oculto para cargar archivos JSON */}
       <input
         ref={fileInputRef}
         type="file"
@@ -218,6 +251,30 @@ export const Toolbar = () => {
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
+      
+      {/* Input oculto para cargar imagen de plano */}
+      <input
+        ref={floorPlanInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg"
+        style={{ display: 'none' }}
+        onChange={handleFloorPlanChange}
+      />
+      
+      {/* Botón Cargar Plano */}
+      <button
+        onClick={handleLoadFloorPlan}
+        style={{
+          backgroundColor: '#00897B',
+          color: 'white',
+          padding: '8px 16px',
+          border: '1px solid #ccc',
+          cursor: 'pointer',
+        }}
+        title="Cargar imagen de plano de fondo"
+      >
+        📁 Cargar Plano
+      </button>
       
       {/* Botones de Proyecto */}
       <button
