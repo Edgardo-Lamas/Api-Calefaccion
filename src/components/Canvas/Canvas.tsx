@@ -17,8 +17,6 @@ export const Canvas = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
-  const [isDraggingBackground, setIsDraggingBackground] = useState(false);
-  const [backgroundDragStart, setBackgroundDragStart] = useState({ x: 0, y: 0 });
   
   const { tool } = useToolsStore();
   const { 
@@ -35,7 +33,6 @@ export const Canvas = () => {
     backgroundImage,
     backgroundImageOffset,
     backgroundImageDimensions,
-    setBackgroundImageOffset,
     setBackgroundImageDimensions,
   } = useElementsStore();
 
@@ -480,31 +477,13 @@ export const Canvas = () => {
       } else if (foundPipeId) {
         // Seleccionar la tubería
         setSelectedElement(foundPipeId);
-        setIsDragging(false); // Las tuberías no se pueden arrastrar
+        setIsDragging(false);
         console.log('Tubería seleccionada:', foundPipeId);
       } else {
         // No se encontró ningún elemento
         setSelectedElement(null);
         setIsDragging(false);
-        
-        // Si hay imagen de fondo, permitir arrastrarla
-        if (backgroundImage) {
-          setIsDraggingBackground(true);
-          setBackgroundDragStart({
-            x: coords.x - backgroundImageOffset.x,
-            y: coords.y - backgroundImageOffset.y,
-          });
-          console.log('🖼️ Iniciando arrastre de plano:', {
-            coords,
-            backgroundImageOffset,
-            dragStart: {
-              x: coords.x - backgroundImageOffset.x,
-              y: coords.y - backgroundImageOffset.y,
-            }
-          });
-        } else {
-          console.log('Deseleccionado');
-        }
+        console.log('Deseleccionado');
       }
     }
 
@@ -518,15 +497,6 @@ export const Canvas = () => {
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getMouseCoordinates(e);
     setMousePos(coords);
-
-    // Si estamos arrastrando el plano de fondo
-    if (isDraggingBackground) {
-      const newOffsetX = coords.x - backgroundDragStart.x;
-      const newOffsetY = coords.y - backgroundDragStart.y;
-      console.log('🖼️ Moviendo plano:', { coords, backgroundDragStart, newOffset: { x: newOffsetX, y: newOffsetY } });
-      setBackgroundImageOffset({ x: newOffsetX, y: newOffsetY });
-      return;
-    }
 
     // Si estamos arrastrando un elemento seleccionado
     if (isDragging && selectedElementId) {
@@ -556,9 +526,8 @@ export const Canvas = () => {
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getMouseCoordinates(e);
     
-    // Desactivar dragging de elementos y plano
+    // Desactivar dragging
     setIsDragging(false);
-    setIsDraggingBackground(false);
 
     console.log('MouseUp:', {
       tool,
@@ -740,7 +709,6 @@ export const Canvas = () => {
 
   // Determinar el cursor según el estado
   const getCursor = () => {
-    if (isDraggingBackground) return 'grabbing';
     if (tool === 'select' && isDragging) return 'grabbing';
     if (tool === 'select') {
       // Verificar si el mouse está sobre algún elemento
@@ -749,7 +717,6 @@ export const Canvas = () => {
                           pipes.some(p => isPointNearPipe(mousePos, p.points, 10));
       
       if (overElement) return 'grab';
-      if (backgroundImage) return 'move'; // Cursor de mover cuando hay plano de fondo
       return 'default';
     }
     if (tool === 'radiator' || tool === 'boiler') return 'copy';

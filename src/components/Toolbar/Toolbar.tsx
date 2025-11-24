@@ -18,7 +18,8 @@ export const Toolbar = () => {
     loadProject, 
     setProjectName, 
     setPipes, 
-    setBackgroundImage, 
+    setBackgroundImage,
+    setBackgroundImageOffset,
     updateRadiatorPosition 
   } = useElementsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -189,6 +190,30 @@ export const Toolbar = () => {
     floorPlanInputRef.current?.click();
   };
 
+  const handleMoveBackground = (direction: 'up' | 'down' | 'left' | 'right') => {
+    const step = 10; // pixels per step
+    const currentOffset = backgroundImageOffset || { x: 0, y: 0 };
+    
+    switch (direction) {
+      case 'up':
+        setBackgroundImageOffset({ x: currentOffset.x, y: currentOffset.y - step });
+        break;
+      case 'down':
+        setBackgroundImageOffset({ x: currentOffset.x, y: currentOffset.y + step });
+        break;
+      case 'left':
+        setBackgroundImageOffset({ x: currentOffset.x - step, y: currentOffset.y });
+        break;
+      case 'right':
+        setBackgroundImageOffset({ x: currentOffset.x + step, y: currentOffset.y });
+        break;
+    }
+  };
+
+  const handleResetBackground = () => {
+    setBackgroundImageOffset({ x: 0, y: 0 });
+  };
+
   const handleFloorPlanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -305,6 +330,96 @@ export const Toolbar = () => {
       >
         📁 Cargar Plano
       </button>
+      
+      {/* Controles de ajuste del plano (solo si hay plano cargado) */}
+      {backgroundImageDimensions && (
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          alignItems: 'center',
+          backgroundColor: '#f5f5f5',
+          padding: '4px',
+          borderRadius: '4px',
+          border: '1px solid #ccc',
+        }}>
+          <span style={{ fontSize: '11px', marginRight: '4px' }}>Ajustar plano:</span>
+          <button
+            onClick={() => handleMoveBackground('up')}
+            style={{
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              cursor: 'pointer',
+              width: '28px',
+              height: '28px',
+              padding: '4px',
+              fontSize: '14px',
+            }}
+            title="Mover plano arriba"
+          >
+            ⬆️
+          </button>
+          <button
+            onClick={() => handleMoveBackground('down')}
+            style={{
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              cursor: 'pointer',
+              width: '28px',
+              height: '28px',
+              padding: '4px',
+              fontSize: '14px',
+            }}
+            title="Mover plano abajo"
+          >
+            ⬇️
+          </button>
+          <button
+            onClick={() => handleMoveBackground('left')}
+            style={{
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              cursor: 'pointer',
+              width: '28px',
+              height: '28px',
+              padding: '4px',
+              fontSize: '14px',
+            }}
+            title="Mover plano izquierda"
+          >
+            ⬅️
+          </button>
+          <button
+            onClick={() => handleMoveBackground('right')}
+            style={{
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              cursor: 'pointer',
+              width: '28px',
+              height: '28px',
+              padding: '4px',
+              fontSize: '14px',
+            }}
+            title="Mover plano derecha"
+          >
+            ➡️
+          </button>
+          <button
+            onClick={handleResetBackground}
+            style={{
+              backgroundColor: '#FF5722',
+              color: 'white',
+              border: '1px solid #ccc',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              fontSize: '11px',
+              marginLeft: '4px',
+            }}
+            title="Centrar plano"
+          >
+            ⟲ Reset
+          </button>
+        </div>
+      )}
       
       {/* Botones de Proyecto */}
       <button
