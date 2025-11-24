@@ -442,14 +442,56 @@ export const Canvas = () => {
         }
       }
 
-      // Si no se encontró radiador ni caldera, buscar tubería
+      // Si no se encontró radiador ni caldera, buscar tubería MÁS CERCANA
       let foundPipeId: string | null = null;
       if (!foundRadiator && !foundBoiler) {
-        for (let i = pipes.length - 1; i >= 0; i--) {
-          if (isPointNearPipe(coords, pipes[i].points, 10)) {
-            foundPipeId = pipes[i].id;
-            break;
+        let closestPipe: { id: string; distance: number } | null = null;
+        
+        for (let i = 0; i < pipes.length; i++) {
+          const pipe = pipes[i];
+          if (pipe.points.length < 2) continue;
+          
+          // Calcular distancia mínima a cada segmento de esta tubería
+          let minDistance = Infinity;
+          for (let j = 0; j < pipe.points.length - 1; j++) {
+            const p1 = pipe.points[j];
+            const p2 = pipe.points[j + 1];
+            
+            // Distancia punto-segmento
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const lengthSquared = dx * dx + dy * dy;
+            
+            if (lengthSquared === 0) {
+              // El segmento es un punto
+              const dist = Math.sqrt(
+                (coords.x - p1.x) ** 2 + (coords.y - p1.y) ** 2
+              );
+              minDistance = Math.min(minDistance, dist);
+            } else {
+              // Proyección del punto sobre la línea
+              let t = ((coords.x - p1.x) * dx + (coords.y - p1.y) * dy) / lengthSquared;
+              t = Math.max(0, Math.min(1, t)); // Clamped entre 0 y 1
+              
+              // Punto más cercano en el segmento
+              const closestX = p1.x + t * dx;
+              const closestY = p1.y + t * dy;
+              
+              const dist = Math.sqrt(
+                (coords.x - closestX) ** 2 + (coords.y - closestY) ** 2
+              );
+              minDistance = Math.min(minDistance, dist);
+            }
           }
+          
+          // Si esta tubería está dentro del threshold y es la más cercana hasta ahora
+          if (minDistance <= 10 && (!closestPipe || minDistance < closestPipe.distance)) {
+            closestPipe = { id: pipe.id, distance: minDistance };
+          }
+        }
+        
+        if (closestPipe) {
+          foundPipeId = closestPipe.id;
         }
       }
 
