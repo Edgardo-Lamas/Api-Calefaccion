@@ -7,7 +7,7 @@ import './Toolbar.css';
 
 export const Toolbar = () => {
   const { tool, setTool } = useToolsStore();
-  const { radiators, boilers, pipes, projectName, clearAll, loadProject, setProjectName, setPipes, setBackgroundImage } = useElementsStore();
+  const { radiators, boilers, pipes, projectName, clearAll, loadProject, setProjectName, setPipes, setBackgroundImage, updateRadiatorPosition } = useElementsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -143,16 +143,27 @@ export const Toolbar = () => {
     const confirmed = confirm(
       `¿Generar tuberías automáticas?\n\n` +
       `Se conectarán ${radiators.length} radiador(es) a ${boilers.length} caldera(s).\n` +
+      `Los radiadores se reubicarán en paredes exteriores.\n` +
       `Las tuberías actuales serán reemplazadas.`
     );
 
     if (!confirmed) return;
 
-    // Generar tuberías automáticas
-    const autoPipes = generateAutoPipes(radiators, boilers);
-    setPipes(autoPipes);
+    // Generar tuberías automáticas y obtener nuevas posiciones
+    const result = generateAutoPipes(radiators, boilers, 1200, 800);
+    
+    // Actualizar tuberías
+    setPipes(result.pipes);
+    
+    // Reubicar radiadores en paredes exteriores
+    result.repositionedRadiators.forEach(({ id, x, y }) => {
+      updateRadiatorPosition(id, x, y);
+    });
 
-    alert(`✅ ${autoPipes.length} tuberías generadas (${autoPipes.length / 2} pares IDA/RETORNO)`);
+    alert(
+      `✅ ${result.pipes.length} tuberías generadas (${result.pipes.length / 2} pares IDA/RETORNO)\n` +
+      `📍 ${result.repositionedRadiators.length} radiadores reubicados en paredes exteriores`
+    );
   };
 
   const handleLoadFloorPlan = () => {

@@ -8,169 +8,157 @@ interface Point {
 }
 
 /**
- * Calcula distancia Manhattan entre dos puntos
+ * Detecta pared exterior más cercana y reubica radiador centrado en ella
+ * Asume que las paredes exteriores son los bordes del canvas o las más alejadas
  */
-function manhattanDistance(a: Point, b: Point): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+function repositionRadiatorToExteriorWall(
+  radiator: Radiator,
+  canvasWidth: number,
+  canvasHeight: number
+): { x: number; y: number } {
+  const WALL_MARGIN = 30; // Distancia desde la pared
+  
+  // Calcular distancias a cada pared
+  const distToTop = radiator.y;
+  const distToBottom = canvasHeight - (radiator.y + radiator.height);
+  const distToLeft = radiator.x;
+  const distToRight = canvasWidth - (radiator.x + radiator.width);
+  
+  // Encontrar pared exterior más cercana (suponiendo que es la más cercana al borde)
+  const minDist = Math.min(distToTop, distToBottom, distToLeft, distToRight);
+  
+  let newX = radiator.x;
+  let newY = radiator.y;
+  
+  if (minDist === distToTop) {
+    // Pared superior (exterior) - centrar horizontalmente
+    newY = WALL_MARGIN;
+    // Mantener X o centrar en la habitación estimada
+  } else if (minDist === distToBottom) {
+    // Pared inferior (exterior)
+    newY = canvasHeight - radiator.height - WALL_MARGIN;
+  } else if (minDist === distToLeft) {
+    // Pared izquierda (exterior) - centrar verticalmente
+    newX = WALL_MARGIN;
+  } else {
+    // Pared derecha (exterior)
+    newX = canvasWidth - radiator.width - WALL_MARGIN;
+  }
+  
+  return { x: newX, y: newY };
 }
 
 /**
- * Genera tuberías automáticas con circuito perimetral realista
- * Basado en planos reales: circuito principal + derivaciones tipo T
+ * Encuentra el camino más corto ortogonal entre dos puntos
+ * Usa solo 2 segmentos (L-shape): horizontal luego vertical o viceversa
+ */
+function findShortestPath(start: Point, end: Point): Point[] {
+  // Opción 1: Ir horizontal primero, luego vertical
+  const path1: Point[] = [
+    start,
+    { x: end.x, y: start.y },
+    end
+  ];
+  
+  // Opción 2: Ir vertical primero, luego horizontal
+  const path2: Point[] = [
+    start,
+    { x: start.x, y: end.y },
+    end
+  ];
+  
+  // Calcular distancia total (ambas opciones tienen la misma distancia Manhattan)
+  // Elegir basándose en cuál crea menos cruces o es más natural
+  // Para simplificar, elegimos ir horizontal si la distancia horizontal es mayor
+  if (Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)) {
+    return path1;
+  } else {
+    return path2;
+  }
+}
+
+/**
+ * Genera tuberías automáticas con routing optimizado (distancia mínima)
+ * También reubica radiadores en paredes exteriores/bajo ventanas
  */
 export function generateAutoPipes(
   radiators: Radiator[],
-  boilers: Boiler[]
-): PipeSegment[] {
+  boilers: Boiler[],
+  canvasWidth: number = 1200,
+  canvasHeight: number = 800
+): {
+  pipes: PipeSegment[];
+  repositionedRadiators: Array<{ id: string; x: number; y: number }>;
+} {
   if (boilers.length === 0) {
     console.warn('⚠️ No hay calderas para conectar');
-    return [];
+    return { pipes: [], repositionedRadiators: [] };
   }
   
   if (radiators.length === 0) {
     console.warn('⚠️ No hay radiadores para conectar');
-    return [];
+    return { pipes: [], repositionedRadiators: [] };
   }
 
   const pipes: PipeSegment[] = [];
+  const repositionedRadiators: Array<{ id: string; x: number; y: number }> = [];
   let pipeIdCounter = Date.now();
   
-  // 1. Tomar la caldera principal (la primera)
+  // 1. Caldera principal
   const boiler = boilers[0];
   const boilerCenter = {
     x: boiler.x + boiler.width / 2,
     y: boiler.y + boiler.height / 2
   };
 
-  // 2. Calcular bounding box de todos los radiadores
-  let minX = Infinity, minY = Infinity;
-  let maxX = -Infinity, maxY = -Infinity;
-  
-  radiators.forEach(rad => {
-    minX = Math.min(minX, rad.x);
-    minY = Math.min(minY, rad.y);
-    maxX = Math.max(maxX, rad.x + rad.width);
-    maxY = Math.max(maxY, rad.y + rad.height);
-  });
-
-  // Margen perimetral
-  const MARGIN = 40;
-  minX -= MARGIN;
-  minY -= MARGIN;
-  maxX += MARGIN;
-  maxY += MARGIN;
-
-  // 3. Crear circuito principal perimetral (rectángulo que recorre todo)
-  const perimeterPath: Point[] = [
-    { x: minX, y: minY },         // Esquina superior izquierda
-    { x: maxX, y: minY },         // Esquina superior derecha  
-    { x: maxX, y: maxY },         // Esquina inferior derecha
-    { x: minX, y: maxY },         // Esquina inferior izquierda
-    { x: minX, y: minY },         // Volver al inicio (cerrar circuito)
-  ];
-
-  // 4. Conectar caldera al circuito principal (punto más cercano)
-  const closestPointOnPerimeter = findClosestPointOnPath(boilerCenter, perimeterPath);
-  
-  // Tubería de conexión: caldera → circuito principal
-  const boilerToPerimeter: Point[] = [
-    boilerCenter,
-    { x: boilerCenter.x, y: closestPointOnPerimeter.y }, // Ir vertical primero
-    closestPointOnPerimeter
-  ];
-
-  // 5. Generar circuito IDA (rojo)
-  pipes.push({
-    id: `pipe-supply-main-${pipeIdCounter++}`,
-    type: 'pipe',
-    pipeType: 'supply',
-    points: [...boilerToPerimeter, ...perimeterPath],
-    diameter: 25, // Tubería principal más gruesa
-    material: 'Multicapa',
-  });
-
-  // 6. Generar circuito RETORNO (azul) - paralelo con offset
-  const PARALLEL_OFFSET = 8;
-  const returnPath = perimeterPath.map(p => ({
-    x: p.x + PARALLEL_OFFSET,
-    y: p.y + PARALLEL_OFFSET
-  }));
-  
-  const returnBoilerToPerimeter = boilerToPerimeter.map(p => ({
-    x: p.x + PARALLEL_OFFSET,
-    y: p.y + PARALLEL_OFFSET
-  }));
-
-  pipes.push({
-    id: `pipe-return-main-${pipeIdCounter++}`,
-    type: 'pipe',
-    pipeType: 'return',
-    points: [...returnBoilerToPerimeter, ...returnPath],
-    diameter: 25,
-    material: 'Multicapa',
-  });
-
-  // 7. Derivar cada radiador al circuito más cercano (conexión tipo T)
+  // 2. Reubicar cada radiador en pared exterior y crear conexiones directas
   radiators.forEach(radiator => {
-    const radCenter = {
-      x: radiator.x + radiator.width / 2,
-      y: radiator.y + radiator.height
+    // Reubicar radiador a pared exterior
+    const newPosition = repositionRadiatorToExteriorWall(radiator, canvasWidth, canvasHeight);
+    repositionedRadiators.push({
+      id: radiator.id,
+      x: newPosition.x,
+      y: newPosition.y
+    });
+    
+    // Punto de conexión del radiador (donde están las conexiones dibujadas)
+    const radiatorConnection = {
+      x: newPosition.x + 10, // Donde dibujamos los puntos de conexión
+      y: newPosition.y + radiator.height / 2
     };
 
-    // Encontrar punto más cercano en el circuito perimetral
-    const closestOnPerimeter = findClosestPointOnPath(radCenter, perimeterPath);
+    // 3. Crear path más corto desde caldera a radiador
+    const shortestPath = findShortestPath(boilerCenter, radiatorConnection);
 
-    // Derivación IDA (rojo)
-    const supplyBranch: Point[] = [
-      closestOnPerimeter,
-      { x: closestOnPerimeter.x, y: radCenter.y }, // Vertical
-      { x: radCenter.x, y: radCenter.y }           // Horizontal hasta radiador
-    ];
-
+    // 4. TUBERÍA IDA (roja)
     pipes.push({
-      id: `pipe-supply-branch-${pipeIdCounter++}`,
+      id: `pipe-supply-${pipeIdCounter++}`,
       type: 'pipe',
       pipeType: 'supply',
-      points: supplyBranch,
+      points: shortestPath,
       diameter: 20,
       material: 'Multicapa',
     });
 
-    // Derivación RETORNO (azul) - paralela
-    const returnBranch: Point[] = supplyBranch.map((p, idx) => ({
-      x: p.x + (idx === supplyBranch.length - 1 ? 0 : PARALLEL_OFFSET),
+    // 5. TUBERÍA RETORNO (azul) - paralela con offset
+    const PARALLEL_OFFSET = 8;
+    const returnPath = shortestPath.map(p => ({
+      x: p.x + PARALLEL_OFFSET,
       y: p.y + PARALLEL_OFFSET
     }));
 
     pipes.push({
-      id: `pipe-return-branch-${pipeIdCounter++}`,
+      id: `pipe-return-${pipeIdCounter++}`,
       type: 'pipe',
       pipeType: 'return',
-      points: returnBranch,
+      points: returnPath,
       diameter: 20,
       material: 'Multicapa',
     });
   });
 
-  console.log(`✅ Generado circuito perimetral + ${radiators.length * 2} derivaciones (${pipes.length} tuberías totales)`);
+  console.log(`✅ Generadas ${pipes.length} tuberías (${pipes.length / 2} pares IDA/RETORNO)`);
+  console.log(`✅ Reubicados ${repositionedRadiators.length} radiadores en paredes exteriores`);
   
-  return pipes;
-}
-
-/**
- * Encuentra el punto más cercano en un path a un punto dado
- */
-function findClosestPointOnPath(point: Point, path: Point[]): Point {
-  let closest = path[0];
-  let minDistance = manhattanDistance(point, closest);
-
-  for (let i = 1; i < path.length; i++) {
-    const distance = manhattanDistance(point, path[i]);
-    if (distance < minDistance) {
-      minDistance = distance;
-      closest = path[i];
-    }
-  }
-
-  return closest;
+  return { pipes, repositionedRadiators };
 }

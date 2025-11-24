@@ -97,9 +97,13 @@ export const Canvas = () => {
       }
     }
 
-    // Dibujar todos los radiadores
+    // Dibujar todos los radiadores (VISTA SUPERIOR)
     radiators.forEach((radiator) => {
-      // Dibujar rectángulo del radiador
+      // Fondo blanco del radiador
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(radiator.x, radiator.y, radiator.width, radiator.height);
+      
+      // Borde del radiador
       ctx.strokeStyle = '#333';
       ctx.lineWidth = 2;
       ctx.strokeRect(radiator.x, radiator.y, radiator.width, radiator.height);
@@ -111,18 +115,34 @@ export const Canvas = () => {
         ctx.strokeRect(radiator.x - 2, radiator.y - 2, radiator.width + 4, radiator.height + 4);
       }
 
-      // Dibujar aletas internas (simulación)
+      // Dibujar aletas horizontales (vista superior - líneas paralelas)
       ctx.strokeStyle = '#666';
       ctx.lineWidth = 1;
-      const numFins = 5;
-      const finSpacing = radiator.width / (numFins + 1);
+      const numFins = 8; // Más aletas para vista superior
+      const finSpacing = radiator.height / (numFins + 1);
       for (let i = 1; i <= numFins; i++) {
-        const finX = radiator.x + finSpacing * i;
+        const finY = radiator.y + finSpacing * i;
         ctx.beginPath();
-        ctx.moveTo(finX, radiator.y);
-        ctx.lineTo(finX, radiator.y + radiator.height);
+        ctx.moveTo(radiator.x + 2, finY);
+        ctx.lineTo(radiator.x + radiator.width - 2, finY);
         ctx.stroke();
       }
+
+      // Conexiones de tubería (2 puntos en un extremo)
+      const connectionSize = 4;
+      const connectionOffset = 10;
+      
+      // Conexión IDA (arriba)
+      ctx.fillStyle = '#D32F2F';
+      ctx.beginPath();
+      ctx.arc(radiator.x + connectionOffset, radiator.y + radiator.height / 3, connectionSize, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Conexión RETORNO (abajo)
+      ctx.fillStyle = '#29B6F6';
+      ctx.beginPath();
+      ctx.arc(radiator.x + connectionOffset, radiator.y + 2 * radiator.height / 3, connectionSize, 0, Math.PI * 2);
+      ctx.fill();
 
       // Opcional: mostrar potencia
       ctx.fillStyle = '#333';
