@@ -97,61 +97,63 @@ export const Canvas = () => {
       }
     }
 
-    // Dibujar todos los radiadores (VISTA SUPERIOR)
+    // Dibujar todos los radiadores (VISTA SUPERIOR COMPACTA)
     radiators.forEach((radiator) => {
-      // Fondo blanco del radiador
-      ctx.fillStyle = '#FFFFFF';
+      // Fondo del radiador (color rojo/naranja como en planos)
+      ctx.fillStyle = '#E57373';
       ctx.fillRect(radiator.x, radiator.y, radiator.width, radiator.height);
       
       // Borde del radiador
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#C62828';
+      ctx.lineWidth = 1;
       ctx.strokeRect(radiator.x, radiator.y, radiator.width, radiator.height);
 
       // Si está seleccionado, dibujar borde resaltado
       if (radiator.id === selectedElementId) {
         ctx.strokeStyle = '#2196F3';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
         ctx.strokeRect(radiator.x - 2, radiator.y - 2, radiator.width + 4, radiator.height + 4);
       }
 
-      // Dibujar aletas horizontales (vista superior - líneas paralelas)
-      ctx.strokeStyle = '#666';
-      ctx.lineWidth = 1;
-      const numFins = 8; // Más aletas para vista superior
-      const finSpacing = radiator.height / (numFins + 1);
-      for (let i = 1; i <= numFins; i++) {
-        const finY = radiator.y + finSpacing * i;
+      // Líneas internas verticales (simulando elementos internos)
+      ctx.strokeStyle = '#B71C1C';
+      ctx.lineWidth = 0.5;
+      const numLines = 4;
+      const lineSpacing = radiator.width / (numLines + 1);
+      for (let i = 1; i <= numLines; i++) {
+        const lineX = radiator.x + lineSpacing * i;
         ctx.beginPath();
-        ctx.moveTo(radiator.x + 2, finY);
-        ctx.lineTo(radiator.x + radiator.width - 2, finY);
+        ctx.moveTo(lineX, radiator.y + 1);
+        ctx.lineTo(lineX, radiator.y + radiator.height - 1);
         ctx.stroke();
       }
 
-      // Conexiones de tubería (2 puntos en un extremo)
-      const connectionSize = 4;
-      const connectionOffset = 10;
+      // Conexiones de tubería (2 puntos pequeños en un extremo)
+      const connectionSize = 2;
+      const connectionOffset = 5;
       
-      // Conexión IDA (arriba)
+      // Conexión IDA (izquierda)
       ctx.fillStyle = '#D32F2F';
       ctx.beginPath();
       ctx.arc(radiator.x + connectionOffset, radiator.y + radiator.height / 3, connectionSize, 0, Math.PI * 2);
       ctx.fill();
       
-      // Conexión RETORNO (abajo)
+      // Conexión RETORNO (izquierda abajo)
       ctx.fillStyle = '#29B6F6';
       ctx.beginPath();
       ctx.arc(radiator.x + connectionOffset, radiator.y + 2 * radiator.height / 3, connectionSize, 0, Math.PI * 2);
       ctx.fill();
 
-      // Opcional: mostrar potencia
-      ctx.fillStyle = '#333';
-      ctx.font = '10px Arial';
-      ctx.fillText(
-        `${radiator.power} Kcal/h`,
-        radiator.x + 5,
-        radiator.y + radiator.height / 2
-      );
+      // Mostrar potencia solo si está seleccionado (para no saturar)
+      if (radiator.id === selectedElementId) {
+        ctx.fillStyle = '#333';
+        ctx.font = '9px Arial';
+        ctx.fillText(
+          `${radiator.power} Kcal/h`,
+          radiator.x + radiator.width + 5,
+          radiator.y + radiator.height / 2
+        );
+      }
     });
 
     // Dibujar todas las calderas
@@ -204,7 +206,7 @@ export const Canvas = () => {
       if (isSelected) baseColor = '#FF9800'; // Naranja si está seleccionada
       
       ctx.strokeStyle = baseColor;
-      ctx.lineWidth = pipe.diameter / 4; // Grosor constante y visible
+      ctx.lineWidth = isSelected ? 2.5 : 1.5; // Líneas finas y proporcionales
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.setLineDash([]); // Línea sólida
@@ -340,8 +342,8 @@ export const Canvas = () => {
         type: 'radiator',
         x: coords.x,
         y: coords.y,
-        width: 80,
-        height: 40,
+        width: 60,  // Vista superior: más angosto
+        height: 12, // Vista superior: muy bajo (franja)
         power: 1500, // Kcal/h
       };
 
