@@ -20,9 +20,10 @@ export const RoomPanel: React.FC = () => {
       id: `room-${Date.now()}`,
       name: `Habitación ${rooms.length + 1}`,
       area: 15, // m² por defecto
-      thermalFactor: 50, // Default: 50 Kcal/h·m²
-      hasExteriorWall: true,
-      windowsLevel: 'normales',
+      height: 2.5, // metros (altura estándar)
+      thermalFactor: 50, // Default: 50 Kcal/h·m³
+      hasExteriorWall: false, // Por defecto NO (más conservador)
+      windowsLevel: 'sin-ventanas', // Por defecto sin ventanas
       radiatorIds: []
     };
     
@@ -56,7 +57,7 @@ export const RoomPanel: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      zIndex: 1000
+      zIndex: 10
     }}>
       {/* Header */}
       <div style={{
@@ -145,8 +146,8 @@ export const RoomPanel: React.FC = () => {
                 </div>
                 
                 <div style={{ fontSize: '12px', color: '#666' }}>
-                  <div>Área: {room.area} m²</div>
-                  <div>Factor: {room.thermalFactor} Kcal/h·m²</div>
+                  <div>Área: {room.area} m² × {room.height} m = {(room.area * room.height).toFixed(1)} m³</div>
+                  <div>Factor: {room.thermalFactor} Kcal/h·m³</div>
                   <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #eee' }}>
                     <strong>Requerido:</strong> {powerCheck.required.toLocaleString()} Kcal/h
                   </div>
@@ -212,6 +213,28 @@ export const RoomPanel: React.FC = () => {
                 borderRadius: '4px'
               }}
               min="1"
+              step="0.1"
+            />
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
+              Altura (m):
+            </label>
+            <input
+              type="number"
+              value={selectedRoom.height}
+              onChange={(e) => updateRoom(selectedRoom.id, { height: Number(e.target.value) })}
+              style={{
+                width: '100%',
+                padding: '6px',
+                fontSize: '13px',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+              min="2"
+              max="4"
+              step="0.1"
             />
           </div>
           
@@ -230,9 +253,9 @@ export const RoomPanel: React.FC = () => {
                 borderRadius: '4px'
               }}
             >
-              <option value={40}>40 Kcal/h·m² (Templado/Edificio)</option>
-              <option value={50}>50 Kcal/h·m² (Normal)</option>
-              <option value={60}>60 Kcal/h·m² (Frío intenso)</option>
+              <option value={40}>40 Kcal/h·m³ (Templado/Edificio)</option>
+              <option value={50}>50 Kcal/h·m³ (Normal)</option>
+              <option value={60}>60 Kcal/h·m³ (Frío intenso)</option>
             </select>
           </div>
           

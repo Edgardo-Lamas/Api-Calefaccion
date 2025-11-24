@@ -3,26 +3,35 @@ import { Radiator } from '../models/Radiator';
 
 /**
  * Calcula la potencia requerida para una habitación
- * Formula base: Area × Factor térmico
- * Ajustes: pared exterior +15%, ventanas +0% a +20%
+ * Formula base: Volumen (m²×altura) × Factor térmico (Kcal/h·m³)
+ * Ajustes opcionales (suma, no multiplica):
+ * - Pared exterior: +15%
+ * - Ventanas: +0% a +20%
  */
 export function calculateRoomPower(room: Room): number {
-  // Potencia base: área × factor térmico
-  let power = room.area * room.thermalFactor;
+  // Potencia base: volumen × factor térmico
+  const volume = room.area * room.height;
+  let power = volume * room.thermalFactor;
   
-  // Ajuste por pared exterior (+15%)
+  // Ajustes se suman, NO se multiplican
+  let totalAdjustment = 0;
+  
+  // Ajuste por pared exterior
   if (room.hasExteriorWall) {
-    power *= 1.15;
+    totalAdjustment += 0.15; // +15%
   }
   
   // Ajuste por nivel de ventanas
-  const windowFactors = {
-    'sin-ventanas': 1.0,   // Sin ajuste
-    'pocas': 1.05,         // +5%
-    'normales': 1.10,      // +10%
-    'muchas': 1.20         // +20%
+  const windowAdjustments = {
+    'sin-ventanas': 0,      // 0%
+    'pocas': 0.05,          // +5%
+    'normales': 0.10,       // +10%
+    'muchas': 0.20          // +20%
   };
-  power *= windowFactors[room.windowsLevel];
+  totalAdjustment += windowAdjustments[room.windowsLevel];
+  
+  // Aplicar ajuste total
+  power = power * (1 + totalAdjustment);
   
   return Math.round(power);
 }

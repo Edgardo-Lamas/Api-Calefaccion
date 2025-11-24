@@ -2,8 +2,9 @@ export interface Room {
   id: string;
   name: string;
   area: number; // m²
+  height: number; // metros (altura de techo)
   
-  // Factor térmico base (Kcal/h por m²)
+  // Factor térmico base (Kcal/h por m³)
   thermalFactor: 40 | 50 | 60; // Default: 50
   
   // Ajustes opcionales
