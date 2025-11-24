@@ -28,6 +28,7 @@ export const Canvas = () => {
     selectedElementId, 
     setSelectedElement, 
     updateRadiatorPosition,
+    rotateRadiator,
     updateBoilerPosition,
     removeElement,
     backgroundImage,
@@ -818,6 +819,40 @@ export const Canvas = () => {
           ⊡
         </button>
       </div>
+      
+      {/* Botón de rotación (solo si hay un radiador seleccionado) */}
+      {selectedElementId && radiators.some(r => r.id === selectedElementId) && (() => {
+        const selectedRadiator = radiators.find(r => r.id === selectedElementId);
+        if (!selectedRadiator) return null;
+        
+        // Calcular posición del botón en coordenadas de pantalla
+        const screenX = selectedRadiator.x * zoom + panOffset.x + (selectedRadiator.width * zoom / 2);
+        const screenY = selectedRadiator.y * zoom + panOffset.y - 35;
+        
+        return (
+          <button
+            onClick={() => rotateRadiator(selectedElementId)}
+            style={{
+              position: 'absolute',
+              left: `${screenX}px`,
+              top: `${screenY}px`,
+              transform: 'translateX(-50%)',
+              width: '32px',
+              height: '32px',
+              borderRadius: '4px',
+              border: '2px solid #2196F3',
+              background: 'white',
+              fontSize: '16px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              zIndex: 1000,
+            }}
+            title="Rotar radiador 90°"
+          >
+            ↻
+          </button>
+        );
+      })()}
       
       <div style={{
         position: 'absolute',

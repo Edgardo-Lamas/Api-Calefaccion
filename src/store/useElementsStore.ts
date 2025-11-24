@@ -19,6 +19,7 @@ interface ElementsStore {
   addBoiler: (boiler: Boiler) => void;
   setSelectedElement: (id: string | null) => void;
   updateRadiatorPosition: (id: string, x: number, y: number, width?: number, height?: number) => void;
+  rotateRadiator: (id: string) => void;
   updateBoilerPosition: (id: string, x: number, y: number) => void;
   startPipe: (startPoint: Point, pipeType: PipeType, fromElementId?: string) => string;
   addPipePoint: (tempPipeId: string, point: Point) => void;
@@ -69,6 +70,16 @@ export const useElementsStore = create<ElementsStore>((set) => ({
       radiators: state.radiators.map((radiator) =>
         radiator.id === id 
           ? { ...radiator, x, y, ...(width !== undefined && { width }), ...(height !== undefined && { height }) }
+          : radiator
+      ),
+    }));
+  },
+
+  rotateRadiator: (id) => {
+    set((state) => ({
+      radiators: state.radiators.map((radiator) =>
+        radiator.id === id
+          ? { ...radiator, width: radiator.height, height: radiator.width }
           : radiator
       ),
     }));

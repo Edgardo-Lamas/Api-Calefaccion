@@ -21,6 +21,7 @@ export const Toolbar = () => {
     setPipes, 
     setBackgroundImage,
     setBackgroundImageOffset,
+    setBackgroundImageDimensions,
     updateRadiatorPosition 
   } = useElementsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,32 +159,20 @@ export const Toolbar = () => {
     const confirmed = confirm(
       `¿Generar tuberías automáticas?\n\n` +
       `Se conectarán ${radiators.length} radiador(es) a ${boilers.length} caldera(s).\n` +
-      `Los radiadores se reubicarán en paredes exteriores.\n` +
-      `Las tuberías actuales serán reemplazadas.`
+      `Las tuberías actuales serán reemplazadas.\n\n` +
+      `NOTA: Los radiadores NO se moverán. Colócalos manualmente donde quieras.`
     );
 
     if (!confirmed) return;
 
-    // Usar dimensiones del plano si existe, sino dimensiones del canvas
-    const workWidth = backgroundImageDimensions?.width || 1200;
-    const workHeight = backgroundImageDimensions?.height || 800;
-    const offsetX = backgroundImageOffset?.x || 0;
-    const offsetY = backgroundImageOffset?.y || 0;
-
-    // Generar tuberías automáticas y obtener nuevas posiciones
-    const result = generateAutoPipes(radiators, boilers, workWidth, workHeight, offsetX, offsetY);
+    // Solo generar routing desde caldera a cada radiador (sin mover)
+    const result = generateAutoPipes(radiators, boilers);
     
     // Actualizar tuberías
     setPipes(result.pipes);
-    
-    // Reubicar radiadores en paredes exteriores con orientación correcta
-    result.repositionedRadiators.forEach(({ id, x, y, width, height }) => {
-      updateRadiatorPosition(id, x, y, width, height);
-    });
 
     alert(
-      `✅ ${result.pipes.length} tuberías generadas (${result.pipes.length / 2} pares IDA/RETORNO)\n` +
-      `📍 ${result.repositionedRadiators.length} radiadores reubicados en paredes exteriores`
+      `✅ ${result.pipes.length} tuberías generadas (${result.pipes.length / 2} pares IDA/RETORNO)`
     );
   };
 
@@ -219,6 +208,7 @@ export const Toolbar = () => {
     if (confirm('¿Eliminar el plano de fondo actual?')) {
       setBackgroundImage(null);
       setBackgroundImageOffset({ x: 0, y: 0 });
+      setBackgroundImageDimensions(null);
       console.log('🗑️ Plano de fondo eliminado');
     }
   };

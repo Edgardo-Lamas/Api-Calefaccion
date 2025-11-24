@@ -104,17 +104,11 @@ function findShortestPath(start: Point, end: Point): Point[] {
 
 /**
  * Genera tuberías automáticas con routing optimizado (distancia mínima)
- * También reubica radiadores en paredes exteriores/bajo ventanas
- * @param offsetX - Offset X del plano de fondo (para calcular límites correctos)
- * @param offsetY - Offset Y del plano de fondo (para calcular límites correctos)
+ * Los radiadores permanecen en su posición actual - NO se reubican
  */
 export function generateAutoPipes(
   radiators: Radiator[],
-  boilers: Boiler[],
-  canvasWidth: number = 1200,
-  canvasHeight: number = 800,
-  offsetX: number = 0,
-  offsetY: number = 0
+  boilers: Boiler[]
 ): {
   pipes: PipeSegment[];
   repositionedRadiators: Array<{ id: string; x: number; y: number; width?: number; height?: number }>;
@@ -130,7 +124,6 @@ export function generateAutoPipes(
   }
 
   const pipes: PipeSegment[] = [];
-  const repositionedRadiators: Array<{ id: string; x: number; y: number; width?: number; height?: number }> = [];
   let pipeIdCounter = Date.now();
   
   // 1. Caldera principal
@@ -140,29 +133,15 @@ export function generateAutoPipes(
     y: boiler.y + boiler.height / 2
   };
 
-  // 2. Reubicar cada radiador en pared exterior y crear conexiones directas
+  // 2. Conectar cada radiador DESDE SU POSICIÓN ACTUAL (sin mover)
   radiators.forEach(radiator => {
-    // Reubicar radiador a pared exterior con orientación correcta
-    const newPosition = repositionRadiatorToExteriorWall(
-      radiator, 
-      canvasWidth, 
-      canvasHeight, 
-      offsetX, 
-      offsetY
-    );
-    repositionedRadiators.push({
-      id: radiator.id,
-      x: newPosition.x,
-      y: newPosition.y,
-      width: newPosition.width,
-      height: newPosition.height
-    });
-    
     // Punto de conexión del radiador (donde están las conexiones dibujadas)
-    // Ajustar según si está rotado o no
+    // Detectar orientación: si height > width, está vertical
+    const isVertical = radiator.height > radiator.width;
+    
     const radiatorConnection = {
-      x: newPosition.x + 10, // Donde dibujamos los puntos de conexión
-      y: newPosition.y + newPosition.height / 2
+      x: isVertical ? radiator.x + radiator.width / 3 : radiator.x + 10,
+      y: isVertical ? radiator.y + 10 : radiator.y + radiator.height / 2
     };
 
     // 3. Crear path más corto desde caldera a radiador
@@ -196,7 +175,7 @@ export function generateAutoPipes(
   });
 
   console.log(`✅ Generadas ${pipes.length} tuberías (${pipes.length / 2} pares IDA/RETORNO)`);
-  console.log(`✅ Reubicados ${repositionedRadiators.length} radiadores en paredes exteriores`);
+  console.log(`📍 Radiadores mantienen su posición actual (no reubicados)`);
   
-  return { pipes, repositionedRadiators };
+  return { pipes, repositionedRadiators: [] };
 }
