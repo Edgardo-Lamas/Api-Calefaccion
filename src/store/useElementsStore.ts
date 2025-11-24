@@ -13,6 +13,7 @@ interface ElementsStore {
   selectedElementId: string | null;
   projectName: string;
   backgroundImage: string | null;
+  backgroundImageOffset: { x: number; y: number };
   addRadiator: (radiator: Radiator) => void;
   addBoiler: (boiler: Boiler) => void;
   setSelectedElement: (id: string | null) => void;
@@ -28,6 +29,7 @@ interface ElementsStore {
   moveElement: (id: string, x: number, y: number) => void;
   setPipes: (pipes: PipeSegment[]) => void;
   setBackgroundImage: (imageDataUrl: string | null) => void;
+  setBackgroundImageOffset: (offset: { x: number; y: number }) => void;
   clearAll: () => void;
   loadProject: (project: Project) => void;
   setProjectName: (name: string) => void;
@@ -41,6 +43,7 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   selectedElementId: null,
   projectName: 'Proyecto sin nombre',
   backgroundImage: null,
+  backgroundImageOffset: { x: 0, y: 0 },
   
   addRadiator: (radiator) => {
     set((state) => ({
@@ -244,6 +247,10 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     console.log(imageDataUrl ? '✅ Imagen de plano cargada' : '🧼 Imagen de plano eliminada');
   },
 
+  setBackgroundImageOffset: (offset) => {
+    set({ backgroundImageOffset: offset });
+  },
+
   clearAll: () => {
     set({
       radiators: [],
@@ -251,6 +258,7 @@ export const useElementsStore = create<ElementsStore>((set) => ({
       pipes: [],
       tempPipe: null,
       selectedElementId: null,
+      backgroundImageOffset: { x: 0, y: 0 },
     });
   },
 

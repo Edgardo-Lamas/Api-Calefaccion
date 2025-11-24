@@ -17,6 +17,8 @@ export const Canvas = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
+  const [isDraggingBackground, setIsDraggingBackground] = useState(false);
+  const [backgroundDragStart, setBackgroundDragStart] = useState({ x: 0, y: 0 });
   
   const { tool } = useToolsStore();
   const { 
@@ -31,6 +33,8 @@ export const Canvas = () => {
     updateBoilerPosition,
     removeElement,
     backgroundImage,
+    backgroundImageOffset,
+    setBackgroundImageOffset,
   } = useElementsStore();
 
   // Función helper para verificar si un punto está dentro de un radiador
@@ -89,7 +93,13 @@ export const Canvas = () => {
         const scaledHeight = img.height * scale;
         
         ctx.globalAlpha = 0.6; // Semi-transparente para que se vean los elementos
-        ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+        ctx.drawImage(
+          img, 
+          backgroundImageOffset.x, 
+          backgroundImageOffset.y, 
+          scaledWidth, 
+          scaledHeight
+        );
         ctx.globalAlpha = 1.0; // Restaurar opacidad
       } else {
         // Cargar imagen si no está en caché
@@ -431,10 +441,20 @@ export const Canvas = () => {
         setIsDragging(false); // Las tuberías no se pueden arrastrar
         console.log('Tubería seleccionada:', foundPipeId);
       } else {
-        // No se encontró ningún elemento, deseleccionar
-        setSelectedElement(null);
-        setIsDragging(false);
-        console.log('Deseleccionado');
+        // No se encontró ningún elemento
+        // Si hay imagen de fondo, permitir arrastrarla
+        if (backgroundImage) {
+          setIsDraggingBackground(true);
+          setBackgroundDragStart({
+            x: coords.x - backgroundImageOffset.x,
+            y: coords.y - backgroundImageOffset.y,
+          });
+          console.log('Arrastrando plano de fondo');
+        } else {
+          setSelectedElement(null);
+          setIsDragging(false);
+          console.log('Deseleccionado');
+        }
       }
     }
 
@@ -448,6 +468,14 @@ export const Canvas = () => {
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getMouseCoordinates(e);
     setMousePos(coords);
+
+    // Si estamos arrastrando el plano de fondo
+    if (isDraggingBackground) {
+      const newOffsetX = coords.x - backgroundDragStart.x;
+      const newOffsetY = coords.y - backgroundDragStart.y;
+      setBackgroundImageOffset({ x: newOffsetX, y: newOffsetY });
+      return;
+    }
 
     // Si estamos arrastrando un elemento seleccionado
     if (isDragging && selectedElementId) {
@@ -477,8 +505,9 @@ export const Canvas = () => {
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getMouseCoordinates(e);
     
-    // Desactivar dragging
+    // Desactivar dragging de elementos y plano
     setIsDragging(false);
+    setIsDraggingBackground(false);
 
     console.log('MouseUp:', {
       tool,
@@ -660,8 +689,18 @@ export const Canvas = () => {
 
   // Determinar el cursor según el estado
   const getCursor = () => {
+    if (isDraggingBackground) return 'grabbing';
     if (tool === 'select' && isDragging) return 'grabbing';
-    if (tool === 'select') return 'default';
+    if (tool === 'select') {
+      // Verificar si el mouse está sobre algún elemento
+      const overElement = radiators.some(r => isPointInsideRadiator(mousePos.x, mousePos.y, r)) ||
+                          boilers.some(b => isPointInsideBoiler(mousePos.x, mousePos.y, b)) ||
+                          pipes.some(p => isPointNearPipe(mousePos, p.points, 10));
+      
+      if (overElement) return 'grab';
+      if (backgroundImage) return 'move'; // Cursor de mover cuando hay plano de fondo
+      return 'default';
+    }
     if (tool === 'radiator' || tool === 'boiler') return 'copy';
     return 'default';
   };
