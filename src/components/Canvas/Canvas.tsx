@@ -86,16 +86,16 @@ export const Canvas = () => {
       
       // Solo dibujar si la imagen ya está cargada
       if (img.complete) {
-        // Ajustar imagen al canvas manteniendo aspect ratio
-        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-        const scaledWidth = img.width * scale;
-        const scaledHeight = img.height * scale;
+        // Calcular dimensiones sin escalar por el canvas
+        // Las dimensiones base son las de la imagen original
+        const baseWidth = img.width;
+        const baseHeight = img.height;
         
-        // Guardar dimensiones escaladas si no están guardadas
+        // Guardar dimensiones base si no están guardadas
         if (!backgroundImageDimensions || 
-            backgroundImageDimensions.width !== scaledWidth || 
-            backgroundImageDimensions.height !== scaledHeight) {
-          setBackgroundImageDimensions({ width: scaledWidth, height: scaledHeight });
+            backgroundImageDimensions.width !== baseWidth || 
+            backgroundImageDimensions.height !== baseHeight) {
+          setBackgroundImageDimensions({ width: baseWidth, height: baseHeight });
         }
         
         ctx.globalAlpha = 0.6; // Semi-transparente para que se vean los elementos
@@ -103,8 +103,8 @@ export const Canvas = () => {
           img, 
           backgroundImageOffset.x, 
           backgroundImageOffset.y, 
-          scaledWidth, 
-          scaledHeight
+          baseWidth, 
+          baseHeight
         );
         ctx.globalAlpha = 1.0; // Restaurar opacidad
       } else {
