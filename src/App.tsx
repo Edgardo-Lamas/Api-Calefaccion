@@ -2,6 +2,7 @@ import { Canvas } from './components/Canvas/Canvas';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { PropertiesPanel } from './components/PropertiesPanel/PropertiesPanel';
 import { RoomPanel } from './components/RoomPanel/RoomPanel';
+import { ConfigPanel } from './components/ConfigPanel/ConfigPanel';
 import './App.css';
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
         <Canvas />
         <PropertiesPanel />
         <RoomPanel />
+        <ConfigPanel />
       </div>
     </div>
   );

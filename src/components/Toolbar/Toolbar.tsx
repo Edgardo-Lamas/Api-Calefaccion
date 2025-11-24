@@ -1,9 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
 import { useToolsStore } from '../../store/useToolsStore';
 import { useElementsStore } from '../../store/useElementsStore';
+import { useCompanyStore } from '../../stores/companyStore';
 import { saveToLocalStorage, downloadProjectAsJSON, loadProjectFromFile } from '../../utils/projectStorage';
 import { generateAutoPipes } from '../../utils/pipeRouter';
 import { dimensionPipes } from '../../utils/pipeDimensioning';
+import { generateQuotePDF } from '../../utils/pdfGenerator';
 import './Toolbar.css';
 
 export const Toolbar = () => {
@@ -11,7 +13,8 @@ export const Toolbar = () => {
   const { 
     radiators, 
     boilers, 
-    pipes, 
+    pipes,
+    rooms,
     projectName, 
     backgroundImage,
     backgroundImageDimensions,
@@ -23,8 +26,8 @@ export const Toolbar = () => {
     setBackgroundImage,
     setBackgroundImageOffset,
     setBackgroundImageDimensions,
-    updateRadiatorPosition 
   } = useElementsStore();
+  const { companyInfo, getActivePromotions } = useCompanyStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -274,6 +277,39 @@ export const Toolbar = () => {
     }
   };
 
+  const handleGenerateQuote = () => {
+    // Obtener el canvas
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+      alert('❌ No se encontró el canvas');
+      return;
+    }
+
+    if (radiators.length === 0 && pipes.length === 0) {
+      alert('⚠️ Debes agregar al menos radiadores y tuberías para generar un presupuesto');
+      return;
+    }
+
+    const activePromotions = getActivePromotions();
+    const name = projectName || 'Proyecto de Calefacción';
+
+    try {
+      generateQuotePDF(
+        canvas,
+        rooms,
+        radiators,
+        pipes,
+        companyInfo,
+        activePromotions,
+        name
+      );
+      alert('✅ Presupuesto PDF generado exitosamente');
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      alert('❌ Error al generar el presupuesto. Revisa la consola.');
+    }
+  };
+
   return (
     <div className="toolbar-container">
       <button
@@ -505,6 +541,21 @@ export const Toolbar = () => {
         title="Compartir proyecto"
       >
         📤 Compartir
+      </button>
+
+      <button
+        onClick={handleGenerateQuote}
+        style={{
+          backgroundColor: '#00897B',
+          color: 'white',
+          padding: '8px 16px',
+          border: '1px solid #ccc',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+        }}
+        title="Generar presupuesto profesional en PDF"
+      >
+        📄 Presupuesto
       </button>
       
       <button
