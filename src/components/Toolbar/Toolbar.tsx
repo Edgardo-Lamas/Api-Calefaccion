@@ -111,47 +111,63 @@ export const Toolbar = () => {
   };
 
   const handleAutoConnect = () => {
-    if (radiators.length === 0) {
-      alert('⚠️ No hay radiadores para conectar.\n\nCrea radiadores primero haciendo click en el botón "Radiador" y luego en el canvas.');
+    // Filtrar solo elementos de la planta actual
+    const currentFloorRadiators = radiators.filter(r => r.floor === currentFloor);
+    const currentFloorBoilers = boilers.filter(b => b.floor === currentFloor);
+    
+    if (currentFloorRadiators.length === 0) {
+      alert(`⚠️ No hay radiadores en ${currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta'}.\n\nCrea radiadores en esta planta primero.`);
       return;
     }
-    if (boilers.length === 0) {
-      alert('⚠️ No hay calderas para conectar.\n\nCrea una caldera primero haciendo click en el botón "Caldera" y luego en el canvas.');
+    if (currentFloorBoilers.length === 0) {
+      alert(`⚠️ No hay caldera en ${currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta'}.\n\n` +
+        `Opción 1: Crea una caldera en esta planta.\n` +
+        `Opción 2: Marca una tubería como "⇅ Vertical" para conectar con la caldera de otra planta.`);
       return;
     }
 
     const confirmed = confirm(
-      `¿Generar tuberías automáticas?\n\n` +
-      `Se conectarán ${radiators.length} radiador(es) a ${boilers.length} caldera(s).\n` +
-      `Las tuberías actuales serán reemplazadas.\n\n` +
+      `¿Generar tuberías automáticas en ${currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta'}?\n\n` +
+      `Se conectarán ${currentFloorRadiators.length} radiador(es) a ${currentFloorBoilers.length} caldera(s).\n` +
+      `Las tuberías de esta planta serán reemplazadas.\n\n` +
       `NOTA: Los radiadores NO se moverán. Colócalos manualmente donde quieras.`
     );
 
     if (!confirmed) return;
 
     console.log('🚀 Iniciando conexión automática:', {
-      radiators: radiators.length,
-      boilers: boilers.length,
+      radiators: currentFloorRadiators.length,
+      boilers: currentFloorBoilers.length,
       currentFloor,
-      radiatorsData: radiators.map(r => ({ id: r.id.substring(0, 8), floor: r.floor, x: r.x, y: r.y })),
-      boilersData: boilers.map(b => ({ id: b.id.substring(0, 8), floor: b.floor, x: b.x, y: b.y }))
+      radiatorsData: currentFloorRadiators.map(r => ({ id: r.id.substring(0, 8), floor: r.floor, power: r.power, x: r.x, y: r.y })),
+      boilersData: currentFloorBoilers.map(b => ({ id: b.id.substring(0, 8), floor: b.floor, x: b.x, y: b.y }))
     });
 
     // Solo generar routing desde caldera a cada radiador (sin mover)
-    const result = generateAutoPipes(radiators, boilers);
+    const result = generateAutoPipes(currentFloorRadiators, currentFloorBoilers);
     
     console.log('📊 Resultado de generateAutoPipes:', {
       pipes: result.pipes.length,
       firstPipe: result.pipes[0]
     });
     
-    // Actualizar tuberías
-    setPipes(result.pipes);
+    // Actualizar solo las tuberías de la planta actual
+    // Mantener las tuberías de otras plantas
+    const otherFloorPipes = pipes.filter(p => p.floor !== currentFloor && p.floor !== 'vertical');
+    const verticalPipes = pipes.filter(p => p.floor === 'vertical');
+    const newPipes = [...otherFloorPipes, ...verticalPipes, ...result.pipes];
+    
+    setPipes(newPipes);
 
-    console.log('✅ Tuberías actualizadas en el store');
+    console.log('✅ Tuberías actualizadas en el store:', {
+      total: newPipes.length,
+      currentFloor: result.pipes.length,
+      otherFloors: otherFloorPipes.length,
+      vertical: verticalPipes.length
+    });
 
     alert(
-      `✅ ${result.pipes.length} tuberías generadas (${result.pipes.length / 2} pares IDA/RETORNO)\n\n` +
+      `✅ ${result.pipes.length} tuberías generadas en ${currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta'} (${result.pipes.length / 2} pares IDA/RETORNO)\n\n` +
       `💡 IMPORTANTE: Las tuberías tienen diámetro por defecto (16mm).\n` +
       `Haz click en "📏 Dimensionar" para calcular los diámetros óptimos según la potencia.`
     );
