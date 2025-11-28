@@ -174,18 +174,35 @@ export const Toolbar = () => {
   };
 
   const handleDimensionPipes = () => {
+    console.log('🔍 handleDimensionPipes llamado');
+    
     if (pipes.length === 0) {
+      console.log('❌ Bloqueado: No hay tuberías');
       alert('⚠️ No hay tuberías para dimensionar');
       return;
     }
+    
+    console.log('✅ Hay tuberías:', pipes.length);
+    
     if (radiators.length === 0) {
+      console.log('❌ Bloqueado: No hay radiadores');
       alert('⚠️ Necesitas radiadores con potencia definida para dimensionar');
       return;
     }
+    
+    console.log('✅ Hay radiadores:', radiators.length);
 
     // Verificar que al menos algunos radiadores tengan potencia
     const radiatorsWithPower = radiators.filter(r => r.power > 0);
+    
+    console.log('🔍 Radiadores con potencia:', {
+      total: radiators.length,
+      conPotencia: radiatorsWithPower.length,
+      radiadores: radiators.map(r => ({ id: r.id.substring(0, 8), power: r.power }))
+    });
+    
     if (radiatorsWithPower.length === 0) {
+      console.log('❌ Bloqueado: Radiadores sin potencia');
       alert('⚠️ Los radiadores no tienen potencia asignada.\n\nAsigna radiadores a habitaciones primero para calcular su potencia.');
       return;
     }
