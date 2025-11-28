@@ -404,15 +404,15 @@ export const Canvas = () => {
       }
     });
 
-    // Indicador cuando está en modo conexión de tubería
-    if ((tool === 'pipe' || tool === 'vertical-pipe') && pipeStartElement) {
+    // Indicador cuando está en modo marcado de tubería vertical
+    if (tool === 'vertical-pipe' && pipeStartElement) {
       const element = 
         radiators.find(r => r.id === pipeStartElement.id) ||
         boilers.find(b => b.id === pipeStartElement.id);
       
       if (element) {
         // Resaltar elemento de inicio
-        ctx.strokeStyle = tool === 'vertical-pipe' ? '#9C27B0' : '#2196F3';
+        ctx.strokeStyle = '#9C27B0';
         ctx.lineWidth = 4;
         ctx.setLineDash([5, 5]);
         ctx.strokeRect(
@@ -424,7 +424,7 @@ export const Canvas = () => {
         ctx.setLineDash([]);
         
         // Línea de preview hasta el mouse
-        ctx.strokeStyle = tool === 'vertical-pipe' ? '#9C27B0' : '#2196F3';
+        ctx.strokeStyle = '#9C27B0';
         ctx.lineWidth = 2;
         ctx.setLineDash([10, 5]);
         ctx.beginPath();
@@ -628,8 +628,8 @@ export const Canvas = () => {
         setIsDragging(false);
         console.log('Deseleccionado');
       }
-    } else if (tool === 'pipe' || tool === 'vertical-pipe') {
-      // Modo de conexión de tubería manual
+    } else if (tool === 'vertical-pipe') {
+      // Modo de marcado de tubería vertical
       const foundRadiator = currentFloorRadiators.find(r => 
         isPointInsideRadiator(coords.x, coords.y, r)
       );
@@ -646,22 +646,15 @@ export const Canvas = () => {
             id: clickedElement.id,
             type: foundRadiator ? 'radiator' : 'boiler'
           });
-          console.log(`🔧 Inicio de ${tool === 'vertical-pipe' ? 'tubería VERTICAL' : 'tubería'} desde:`, clickedElement.id);
+          console.log(`⇅ Inicio de tubería VERTICAL desde:`, clickedElement.id);
         } else {
-          // Segundo click: crear tubería
-          const floor = tool === 'vertical-pipe' ? 'vertical' : currentFloor;
-          console.log(`🚀 Creando tubería:`, {
+          // Segundo click: crear tubería vertical
+          createManualPipe(pipeStartElement.id, clickedElement.id, 'vertical');
+          
+          console.log(`✅ Tubería VERTICAL creada:`, {
             from: pipeStartElement.id,
             to: clickedElement.id,
-            floor
-          });
-          
-          createManualPipe(pipeStartElement.id, clickedElement.id, floor);
-          
-          console.log(`✅ ${tool === 'vertical-pipe' ? 'Tubería VERTICAL' : 'Tubería'} creada:`, {
-            from: pipeStartElement.id,
-            to: clickedElement.id,
-            floor
+            floor: 'vertical'
           });
           
           // Resetear y volver a modo select
@@ -671,10 +664,10 @@ export const Canvas = () => {
       } else {
         // Click en vacío: cancelar
         if (pipeStartElement) {
-          console.log('❌ Conexión cancelada');
+          console.log('❌ Marcado de tubería vertical cancelado');
           setPipeStartElement(null);
         } else {
-          console.log('⚠️ No se encontró ningún elemento en las coordenadas:', coords);
+          console.log('⚠️ Click en tubería vertical: selecciona un elemento primero');
         }
       }
     }
@@ -912,7 +905,6 @@ export const Canvas = () => {
       return 'default';
     }
     if (tool === 'radiator' || tool === 'boiler') return 'copy';
-    if (tool === 'pipe') return 'crosshair';
     if (tool === 'vertical-pipe') return 'crosshair';
     return 'default';
   };
