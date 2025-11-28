@@ -640,6 +640,25 @@ export const Canvas = () => {
         boilersInFloor: currentFloorBoilers.length
       });
       
+      // Log de todos los radiadores y calderas con sus posiciones
+      console.log('📍 Radiadores en planta:', currentFloorRadiators.map(r => ({
+        id: r.id.substring(0, 8),
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        bounds: `x:${r.x}-${r.x + r.width}, y:${r.y}-${r.y + r.height}`
+      })));
+      
+      console.log('📍 Calderas en planta:', currentFloorBoilers.map(b => ({
+        id: b.id.substring(0, 8),
+        x: b.x,
+        y: b.y,
+        width: b.width,
+        height: b.height,
+        bounds: `x:${b.x}-${b.x + b.width}, y:${b.y}-${b.y + b.height}`
+      })));
+      
       const foundRadiator = currentFloorRadiators.find(r => 
         isPointInsideRadiator(coords.x, coords.y, r)
       );
