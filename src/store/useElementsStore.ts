@@ -14,9 +14,15 @@ interface ElementsStore {
   tempPipe: PipeSegment | null;
   selectedElementId: string | null;
   projectName: string;
-  backgroundImage: string | null;
+  currentFloor: 'ground' | 'first'; // Planta actual
+  backgroundImage: string | null; // DEPRECATED - usar floorPlans
   backgroundImageOffset: { x: number; y: number };
   backgroundImageDimensions: { width: number; height: number } | null;
+  floorPlans: {
+    ground: { image: string | null; offset: { x: number; y: number }; dimensions: { width: number; height: number } | null };
+    first: { image: string | null; offset: { x: number; y: number }; dimensions: { width: number; height: number } | null };
+  };
+  floorHeight: number; // Altura entre plantas en metros (para calcular tuberías verticales)
   addRadiator: (radiator: Radiator) => void;
   addBoiler: (boiler: Boiler) => void;
   addRoom: (room: Room) => void;
@@ -40,6 +46,11 @@ interface ElementsStore {
   setBackgroundImage: (imageDataUrl: string | null) => void;
   setBackgroundImageOffset: (offset: { x: number; y: number }) => void;
   setBackgroundImageDimensions: (dimensions: { width: number; height: number } | null) => void;
+  setCurrentFloor: (floor: 'ground' | 'first') => void;
+  setFloorPlan: (floor: 'ground' | 'first', imageDataUrl: string | null) => void;
+  setFloorPlanOffset: (floor: 'ground' | 'first', offset: { x: number; y: number }) => void;
+  setFloorPlanDimensions: (floor: 'ground' | 'first', dimensions: { width: number; height: number } | null) => void;
+  setFloorHeight: (height: number) => void;
   clearAll: () => void;
   loadProject: (project: Project) => void;
   setProjectName: (name: string) => void;
@@ -53,25 +64,31 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   tempPipe: null,
   selectedElementId: null,
   projectName: 'Proyecto sin nombre',
+  currentFloor: 'ground',
   backgroundImage: null,
   backgroundImageOffset: { x: 0, y: 0 },
   backgroundImageDimensions: null,
+  floorPlans: {
+    ground: { image: null, offset: { x: 0, y: 0 }, dimensions: null },
+    first: { image: null, offset: { x: 0, y: 0 }, dimensions: null },
+  },
+  floorHeight: 2.8, // Altura estándar entre plantas
   
   addRadiator: (radiator) => {
     set((state) => ({
-      radiators: [...state.radiators, radiator],
+      radiators: [...state.radiators, { ...radiator, floor: state.currentFloor }],
     }));
   },
 
   addBoiler: (boiler) => {
     set((state) => ({
-      boilers: [...state.boilers, boiler],
+      boilers: [...state.boilers, { ...boiler, floor: state.currentFloor }],
     }));
   },
 
   addRoom: (room) => {
     set((state) => ({
-      rooms: [...state.rooms, room],
+      rooms: [...state.rooms, { ...room, floor: state.currentFloor }],
     }));
   },
 
@@ -319,15 +336,69 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     set({ backgroundImageDimensions: dimensions });
   },
 
+  setCurrentFloor: (floor) => {
+    set({ currentFloor: floor });
+    console.log(`🏢 Cambiado a ${floor === 'ground' ? 'Planta Baja' : 'Planta Alta'}`);
+  },
+
+  setFloorPlan: (floor, imageDataUrl) => {
+    set((state) => ({
+      floorPlans: {
+        ...state.floorPlans,
+        [floor]: {
+          ...state.floorPlans[floor],
+          image: imageDataUrl,
+        },
+      },
+    }));
+    console.log(`✅ Plano de ${floor === 'ground' ? 'Planta Baja' : 'Planta Alta'} ${imageDataUrl ? 'cargado' : 'eliminado'}`);
+  },
+
+  setFloorPlanOffset: (floor, offset) => {
+    set((state) => ({
+      floorPlans: {
+        ...state.floorPlans,
+        [floor]: {
+          ...state.floorPlans[floor],
+          offset,
+        },
+      },
+    }));
+  },
+
+  setFloorPlanDimensions: (floor, dimensions) => {
+    set((state) => ({
+      floorPlans: {
+        ...state.floorPlans,
+        [floor]: {
+          ...state.floorPlans[floor],
+          dimensions,
+        },
+      },
+    }));
+  },
+
+  setFloorHeight: (height) => {
+    set({ floorHeight: height });
+    console.log(`📏 Altura entre plantas: ${height}m`);
+  },
+
   clearAll: () => {
     set({
       radiators: [],
       boilers: [],
       pipes: [],
+      rooms: [],
       tempPipe: null,
       selectedElementId: null,
+      currentFloor: 'ground',
+      backgroundImage: null,
       backgroundImageOffset: { x: 0, y: 0 },
       backgroundImageDimensions: null,
+      floorPlans: {
+        ground: { image: null, offset: { x: 0, y: 0 }, dimensions: null },
+        first: { image: null, offset: { x: 0, y: 0 }, dimensions: null },
+      },
     });
   },
 

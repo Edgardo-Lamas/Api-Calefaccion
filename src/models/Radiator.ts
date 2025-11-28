@@ -5,4 +5,5 @@ export interface Radiator extends ElementBase {
   power: number;
   width: number;
   height: number;
+  floor?: 'ground' | 'first'; // Planta donde está ubicado
 }

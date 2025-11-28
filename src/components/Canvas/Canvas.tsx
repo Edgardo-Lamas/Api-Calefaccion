@@ -24,6 +24,7 @@ export const Canvas = () => {
     boilers,
     pipes,
     rooms,
+    currentFloor,
     addRadiator,
     addBoiler,
     selectedElementId, 
@@ -32,11 +33,21 @@ export const Canvas = () => {
     rotateRadiator,
     updateBoilerPosition,
     removeElement,
-    backgroundImage,
-    backgroundImageOffset,
-    backgroundImageDimensions,
-    setBackgroundImageDimensions,
+    floorPlans,
+    setFloorPlanDimensions,
   } = useElementsStore();
+
+  // Filtrar elementos por planta actual
+  const currentFloorRadiators = radiators.filter(r => r.floor === currentFloor);
+  const currentFloorBoilers = boilers.filter(b => b.floor === currentFloor);
+  const currentFloorPipes = pipes.filter(p => p.floor === currentFloor || p.floor === 'vertical');
+  const currentFloorRooms = rooms.filter(r => r.floor === currentFloor);
+
+  // Plano de fondo de la planta actual
+  const currentFloorPlan = floorPlans[currentFloor];
+  const backgroundImage = currentFloorPlan.image;
+  const backgroundImageOffset = currentFloorPlan.offset;
+  const backgroundImageDimensions = currentFloorPlan.dimensions;
 
   // Función helper para verificar si un punto está dentro de un radiador
   const isPointInsideRadiator = (x: number, y: number, radiator: Radiator): boolean => {
@@ -97,7 +108,7 @@ export const Canvas = () => {
         if (!backgroundImageDimensions || 
             backgroundImageDimensions.width !== baseWidth || 
             backgroundImageDimensions.height !== baseHeight) {
-          setBackgroundImageDimensions({ width: baseWidth, height: baseHeight });
+          setFloorPlanDimensions(currentFloor, { width: baseWidth, height: baseHeight });
         }
         
         ctx.globalAlpha = 0.6; // Semi-transparente para que se vean los elementos
@@ -115,8 +126,8 @@ export const Canvas = () => {
       }
     }
 
-    // Dibujar todos los radiadores (VISTA SUPERIOR COMPACTA)
-    radiators.forEach((radiator) => {
+    // Dibujar radiadores de la planta actual
+    currentFloorRadiators.forEach((radiator) => {
       // Detectar orientación: si height > width, está vertical (rotado 90°)
       const isVertical = radiator.height > radiator.width;
       
@@ -196,7 +207,7 @@ export const Canvas = () => {
       }
 
       // Mostrar potencia y nombre de habitación
-      const assignedRoom = rooms.find(r => r.radiatorIds.includes(radiator.id));
+      const assignedRoom = currentFloorRooms.find(r => r.radiatorIds.includes(radiator.id));
       
       if (assignedRoom) {
         // Mostrar nombre de habitación
@@ -237,8 +248,8 @@ export const Canvas = () => {
       }
     });
 
-    // Dibujar todas las calderas
-    boilers.forEach((boiler) => {
+    // Dibujar calderas de la planta actual
+    currentFloorBoilers.forEach((boiler) => {
       // Dibujar rectángulo de la caldera (cuadrado)
       ctx.fillStyle = '#FF5722';
       ctx.fillRect(boiler.x, boiler.y, boiler.width, boiler.height);
@@ -274,8 +285,8 @@ export const Canvas = () => {
       );
     });
 
-    // Dibujar tuberías finalizadas (ordenadas por zIndex)
-    const sortedPipes = [...pipes].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    // Dibujar tuberías finalizadas de la planta actual (ordenadas por zIndex)
+    const sortedPipes = [...currentFloorPipes].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     
     sortedPipes.forEach((pipe) => {
       if (pipe.points.length < 2) return;
@@ -431,7 +442,7 @@ export const Canvas = () => {
       };
 
       addRadiator(newRadiator);
-      console.log('Radiador creado:', newRadiator);
+      console.log('Radiador creado en', currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta', ':', newRadiator);
     }
 
     // Si la herramienta es "boiler", crear una caldera
@@ -447,17 +458,17 @@ export const Canvas = () => {
       };
 
       addBoiler(newBoiler);
-      console.log('Caldera creada:', newBoiler);
+      console.log('Caldera creada en', currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta', ':', newBoiler);
     }
 
     // Si la herramienta es "select", intentar seleccionar o arrastrar
     if (tool === 'select') {
-      // Buscar si hicimos click en algún radiador (recorrer en orden inverso para priorizar los últimos)
+      // Buscar si hicimos click en algún radiador de la planta actual (recorrer en orden inverso para priorizar los últimos)
       let foundRadiator: Radiator | null = null;
       
-      for (let i = radiators.length - 1; i >= 0; i--) {
-        if (isPointInsideRadiator(coords.x, coords.y, radiators[i])) {
-          foundRadiator = radiators[i];
+      for (let i = currentFloorRadiators.length - 1; i >= 0; i--) {
+        if (isPointInsideRadiator(coords.x, coords.y, currentFloorRadiators[i])) {
+          foundRadiator = currentFloorRadiators[i];
           break;
         }
       }
@@ -465,21 +476,21 @@ export const Canvas = () => {
       // Si no se encontró radiador, buscar caldera
       let foundBoiler: Boiler | null = null;
       if (!foundRadiator) {
-        for (let i = boilers.length - 1; i >= 0; i--) {
-          if (isPointInsideBoiler(coords.x, coords.y, boilers[i])) {
-            foundBoiler = boilers[i];
+        for (let i = currentFloorBoilers.length - 1; i >= 0; i--) {
+          if (isPointInsideBoiler(coords.x, coords.y, currentFloorBoilers[i])) {
+            foundBoiler = currentFloorBoilers[i];
             break;
           }
         }
       }
 
-      // Si no se encontró radiador ni caldera, buscar tubería MÁS CERCANA
+      // Si no se encontró radiador ni caldera, buscar tubería MÁS CERCANA en la planta actual
       let foundPipeId: string | null = null;
       if (!foundRadiator && !foundBoiler) {
         let closestPipe: { id: string; distance: number } | null = null;
         
-        for (let i = 0; i < pipes.length; i++) {
-          const pipe = pipes[i];
+        for (let i = 0; i < currentFloorPipes.length; i++) {
+          const pipe = currentFloorPipes[i];
           if (pipe.points.length < 2) continue;
           
           // Calcular distancia mínima a cada segmento de esta tubería
@@ -637,11 +648,11 @@ export const Canvas = () => {
       return;
     }
 
-    // Calcular bounding box de todos los elementos
+    // Calcular bounding box de todos los elementos de la planta actual
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     // Radiadores
-    radiators.forEach(rad => {
+    currentFloorRadiators.forEach(rad => {
       minX = Math.min(minX, rad.x);
       minY = Math.min(minY, rad.y);
       maxX = Math.max(maxX, rad.x + rad.width);
@@ -649,7 +660,7 @@ export const Canvas = () => {
     });
 
     // Calderas
-    boilers.forEach(boiler => {
+    currentFloorBoilers.forEach(boiler => {
       minX = Math.min(minX, boiler.x);
       minY = Math.min(minY, boiler.y);
       maxX = Math.max(maxX, boiler.x + boiler.width);
@@ -657,7 +668,7 @@ export const Canvas = () => {
     });
 
     // Tuberías
-    pipes.forEach(pipe => {
+    currentFloorPipes.forEach(pipe => {
       pipe.points.forEach(point => {
         minX = Math.min(minX, point.x);
         minY = Math.min(minY, point.y);
@@ -896,8 +907,8 @@ export const Canvas = () => {
       </div>
       
       {/* Botón de rotación (solo si hay un radiador seleccionado) */}
-      {selectedElementId && radiators.some(r => r.id === selectedElementId) && (() => {
-        const selectedRadiator = radiators.find(r => r.id === selectedElementId);
+      {selectedElementId && currentFloorRadiators.some(r => r.id === selectedElementId) && (() => {
+        const selectedRadiator = currentFloorRadiators.find(r => r.id === selectedElementId);
         if (!selectedRadiator) return null;
         
         // Calcular posición del botón en coordenadas de pantalla

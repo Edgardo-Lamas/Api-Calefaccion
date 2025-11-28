@@ -14,6 +14,9 @@ export interface Room {
   // Radiadores asignados a esta habitación
   radiatorIds: string[];
   
+  // Planta donde está ubicada
+  floor?: 'ground' | 'first';
+  
   // Posición visual en el canvas (para dibujar el polígono/área)
   bounds?: {
     x: number;

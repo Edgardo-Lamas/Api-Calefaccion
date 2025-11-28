@@ -6,6 +6,7 @@ import { saveToLocalStorage, downloadProjectAsJSON } from '../../utils/projectSt
 import { generateAutoPipes } from '../../utils/pipeRouter';
 import { dimensionPipes } from '../../utils/pipeDimensioning';
 import { generateQuotePDF } from '../../utils/pdfGenerator';
+import { FloorSelector } from '../FloorSelector/FloorSelector';
 import './Toolbar.css';
 
 export const Toolbar = () => {
@@ -347,6 +348,9 @@ export const Toolbar = () => {
       >
         📏 Dimensionar
       </button>
+      
+      {/* Selector de Planta */}
+      <FloorSelector />
       
       <div style={{ flex: 1 }} />
       

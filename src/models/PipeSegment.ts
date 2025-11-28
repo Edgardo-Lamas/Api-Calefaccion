@@ -17,4 +17,5 @@ export interface PipeSegment {
   length?: number;
   zone?: string | null; // ID de la habitación/zona asociada
   zIndex?: number; // Para manejar cruces (qué tubería va arriba)
+  floor?: 'ground' | 'first' | 'vertical'; // Planta donde está ubicado o si es vertical entre plantas
 }
