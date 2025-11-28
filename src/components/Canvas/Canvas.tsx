@@ -482,6 +482,8 @@ export const Canvas = () => {
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    console.log('🖱️ MOUSEDOWN DETECTADO - tool:', tool);
+    
     const coords = getMouseCoordinates(e);
     setMousePos(coords);
 
@@ -922,6 +924,8 @@ export const Canvas = () => {
       return 'default';
     }
     if (tool === 'radiator' || tool === 'boiler') return 'copy';
+    if (tool === 'pipe') return 'crosshair';
+    if (tool === 'vertical-pipe') return 'crosshair';
     return 'default';
   };
 
