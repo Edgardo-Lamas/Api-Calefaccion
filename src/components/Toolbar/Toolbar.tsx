@@ -201,13 +201,47 @@ export const Toolbar = () => {
 
     if (!confirmed) return;
 
-    const dimensionedPipes = dimensionPipes(pipes, radiators, boilers);
-    setPipes(dimensionedPipes);
+    console.log('📏 Iniciando dimensionamiento:', {
+      pipes: pipes.length,
+      radiators: radiators.length,
+      radiatorsWithPower: radiatorsWithPower.length,
+      boilers: boilers.length,
+      pipesData: pipes.map(p => ({ 
+        id: p.id.substring(0, 15), 
+        type: p.pipeType, 
+        floor: p.floor,
+        diameter: p.diameter,
+        points: p.points.length 
+      })),
+      radiatorsData: radiatorsWithPower.map(r => ({ 
+        id: r.id.substring(0, 8), 
+        power: r.power,
+        floor: r.floor 
+      }))
+    });
 
-    alert(
-      `✅ Tuberías dimensionadas automáticamente\n\n` +
-      `Revisa el panel de propiedades para ver los detalles de cada tubería.`
-    );
+    try {
+      const dimensionedPipes = dimensionPipes(pipes, radiators, boilers);
+      
+      console.log('✅ Dimensionamiento completado:', {
+        total: dimensionedPipes.length,
+        sample: dimensionedPipes.slice(0, 3).map(p => ({
+          id: p.id.substring(0, 15),
+          diameter: p.diameter,
+          type: p.pipeType
+        }))
+      });
+      
+      setPipes(dimensionedPipes);
+
+      alert(
+        `✅ Tuberías dimensionadas automáticamente\n\n` +
+        `Revisa el panel de propiedades para ver los detalles de cada tubería.`
+      );
+    } catch (error) {
+      console.error('❌ Error al dimensionar tuberías:', error);
+      alert(`❌ Error al dimensionar tuberías:\n\n${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
   };
 
   const handleLoadFloorPlan = () => {
