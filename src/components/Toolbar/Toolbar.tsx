@@ -129,11 +129,26 @@ export const Toolbar = () => {
 
     if (!confirmed) return;
 
+    console.log('🚀 Iniciando conexión automática:', {
+      radiators: radiators.length,
+      boilers: boilers.length,
+      currentFloor,
+      radiatorsData: radiators.map(r => ({ id: r.id.substring(0, 8), floor: r.floor, x: r.x, y: r.y })),
+      boilersData: boilers.map(b => ({ id: b.id.substring(0, 8), floor: b.floor, x: b.x, y: b.y }))
+    });
+
     // Solo generar routing desde caldera a cada radiador (sin mover)
     const result = generateAutoPipes(radiators, boilers);
     
+    console.log('📊 Resultado de generateAutoPipes:', {
+      pipes: result.pipes.length,
+      firstPipe: result.pipes[0]
+    });
+    
     // Actualizar tuberías
     setPipes(result.pipes);
+
+    console.log('✅ Tuberías actualizadas en el store');
 
     alert(
       `✅ ${result.pipes.length} tuberías generadas (${result.pipes.length / 2} pares IDA/RETORNO)\n\n` +
