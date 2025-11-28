@@ -16,20 +16,23 @@ export const Toolbar = () => {
     boilers, 
     pipes,
     rooms,
-    projectName, 
-    backgroundImage,
-    backgroundImageDimensions,
-    backgroundImageOffset,
-    clearAll, 
+    projectName,
+    currentFloor,
+    floorPlans,
     setPipes, 
-    setBackgroundImage,
-    setBackgroundImageOffset,
-    setBackgroundImageDimensions,
+    setFloorPlan,
+    setFloorPlanOffset,
+    clearAll,
   } = useElementsStore();
   const { companyInfo, getActivePromotions } = useCompanyStore();
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Plano de fondo de la planta actual
+  const currentFloorPlan = floorPlans[currentFloor];
+  const backgroundImage = currentFloorPlan.image;
+  const backgroundImageDimensions = currentFloorPlan.dimensions;
 
   // Autoguardado cada 30 segundos
   useEffect(() => {
@@ -182,34 +185,34 @@ export const Toolbar = () => {
 
   const handleMoveBackground = (direction: 'up' | 'down' | 'left' | 'right') => {
     const step = 10; // pixels per step
-    const currentOffset = backgroundImageOffset || { x: 0, y: 0 };
+    const currentOffset = currentFloorPlan.offset || { x: 0, y: 0 };
     
     switch (direction) {
       case 'up':
-        setBackgroundImageOffset({ x: currentOffset.x, y: currentOffset.y - step });
+        setFloorPlanOffset(currentFloor, { x: currentOffset.x, y: currentOffset.y - step });
         break;
       case 'down':
-        setBackgroundImageOffset({ x: currentOffset.x, y: currentOffset.y + step });
+        setFloorPlanOffset(currentFloor, { x: currentOffset.x, y: currentOffset.y + step });
         break;
       case 'left':
-        setBackgroundImageOffset({ x: currentOffset.x - step, y: currentOffset.y });
+        setFloorPlanOffset(currentFloor, { x: currentOffset.x - step, y: currentOffset.y });
         break;
       case 'right':
-        setBackgroundImageOffset({ x: currentOffset.x + step, y: currentOffset.y });
+        setFloorPlanOffset(currentFloor, { x: currentOffset.x + step, y: currentOffset.y });
         break;
     }
   };
 
   const handleResetBackground = () => {
-    setBackgroundImageOffset({ x: 0, y: 0 });
+    setFloorPlanOffset(currentFloor, { x: 0, y: 0 });
   };
 
   const handleRemoveFloorPlan = () => {
-    if (confirm('¿Eliminar el plano de fondo actual?')) {
-      setBackgroundImage(null);
-      setBackgroundImageOffset({ x: 0, y: 0 });
-      setBackgroundImageDimensions(null);
-      console.log('🗑️ Plano de fondo eliminado');
+    const floorName = currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta';
+    if (confirm(`¿Eliminar el plano de ${floorName}?`)) {
+      setFloorPlan(currentFloor, null);
+      setFloorPlanOffset(currentFloor, { x: 0, y: 0 });
+      console.log(`🗑️ Plano de ${floorName} eliminado`);
     }
   };
 
@@ -227,8 +230,9 @@ export const Toolbar = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const imageDataUrl = event.target?.result as string;
-      setBackgroundImage(imageDataUrl);
-      console.log('✅ Plano de fondo cargado');
+      const floorName = currentFloor === 'ground' ? 'Planta Baja' : 'Planta Alta';
+      setFloorPlan(currentFloor, imageDataUrl);
+      console.log(`✅ Plano de ${floorName} cargado`);
     };
     reader.onerror = () => {
       alert('❌ Error al cargar la imagen');
