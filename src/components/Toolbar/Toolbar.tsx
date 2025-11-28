@@ -322,6 +322,38 @@ export const Toolbar = () => {
       >
         Caldera
       </button>
+
+      <button
+        onClick={() => setTool('pipe')}
+        style={{
+          backgroundColor: tool === 'pipe' ? '#2196F3' : '#f0f0f0',
+          color: tool === 'pipe' ? 'white' : 'black',
+          padding: '6px 12px',
+          border: '1px solid #ccc',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          fontSize: '14px',
+        }}
+        title="Conectar elementos manualmente"
+      >
+        🔧 Tubería
+      </button>
+
+      <button
+        onClick={() => setTool('vertical-pipe')}
+        style={{
+          backgroundColor: tool === 'vertical-pipe' ? '#9C27B0' : '#f0f0f0',
+          color: tool === 'vertical-pipe' ? 'white' : 'black',
+          padding: '6px 12px',
+          border: '1px solid #ccc',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          fontSize: '14px',
+        }}
+        title="Marcar tubería que va a otra planta"
+      >
+        ⬍ Vertical
+      </button>
       
       <button
         onClick={handleAutoConnect}

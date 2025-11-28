@@ -38,6 +38,7 @@ interface ElementsStore {
   addPipePoint: (tempPipeId: string, point: Point) => void;
   finishPipe: (tempPipeId: string, endPoint: Point, toElementId?: string) => void;
   cancelPipe: (tempPipeId: string) => void;
+  createManualPipe: (fromId: string, toId: string, floor?: 'ground' | 'first' | 'vertical') => void;
   addElement: (element: Radiator | Boiler | PipeSegment) => void;
   updateElement: (id: string, updates: Partial<ElementBase>) => void;
   removeElement: (id: string) => void;
@@ -259,6 +260,75 @@ export const useElementsStore = create<ElementsStore>((set) => ({
     set((state) => {
       if (!state.tempPipe || state.tempPipe.id !== tempPipeId) return state;
       return { tempPipe: null };
+    });
+  },
+
+  createManualPipe: (fromId, toId, floor) => {
+    set((state) => {
+      // Buscar elementos de origen y destino
+      const fromRadiator = state.radiators.find(r => r.id === fromId);
+      const fromBoiler = state.boilers.find(b => b.id === fromId);
+      const toRadiator = state.radiators.find(r => r.id === toId);
+      const toBoiler = state.boilers.find(b => b.id === toId);
+
+      const fromElement = fromRadiator || fromBoiler;
+      const toElement = toRadiator || toBoiler;
+
+      if (!fromElement || !toElement) {
+        console.error('❌ No se encontraron los elementos para conectar');
+        return state;
+      }
+
+      // Calcular puntos de conexión (centro de cada elemento)
+      const fromPoint: Point = {
+        x: fromElement.x + fromElement.width / 2,
+        y: fromElement.y + fromElement.height / 2,
+      };
+
+      const toPoint: Point = {
+        x: toElement.x + toElement.width / 2,
+        y: toElement.y + toElement.height / 2,
+      };
+
+      // Calcular longitud
+      const dx = toPoint.x - fromPoint.x;
+      const dy = toPoint.y - fromPoint.y;
+      const lengthPixels = Math.sqrt(dx * dx + dy * dy);
+      const PIXELS_PER_METER = 50;
+      const lengthMeters = lengthPixels / PIXELS_PER_METER;
+
+      // Determinar el tipo de tubería y planta
+      const pipeFloor = floor || state.currentFloor;
+      const isVertical = pipeFloor === 'vertical';
+
+      // Si es vertical, agregar altura entre plantas
+      const totalLength = isVertical 
+        ? lengthMeters + state.floorHeight 
+        : lengthMeters;
+
+      const newPipe: PipeSegment = {
+        id: `pipe-${Date.now()}-${Math.random()}`,
+        points: [fromPoint, toPoint],
+        type: 'pipe',
+        pipeType: 'supply', // Por defecto suministro
+        diameter: 0, // Se dimensionará después
+        material: 'copper', // Por defecto cobre
+        length: totalLength,
+        fromElementId: fromId,
+        toElementId: toId,
+        floor: pipeFloor,
+      };
+
+      console.log(`✅ Tubería ${isVertical ? 'VERTICAL' : 'manual'} creada:`, {
+        from: fromId,
+        to: toId,
+        floor: pipeFloor,
+        length: `${totalLength.toFixed(1)} m`,
+      });
+
+      return {
+        pipes: [...state.pipes, newPipe],
+      };
     });
   },
   

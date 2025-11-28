@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useElementsStore } from './useElementsStore';
 
-type Tool = 'select' | 'radiator' | 'boiler';
+type Tool = 'select' | 'radiator' | 'boiler' | 'pipe' | 'vertical-pipe';
 
 interface ToolsStore {
   tool: Tool;

@@ -10,6 +10,7 @@ export const Canvas = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [pipeStartElement, setPipeStartElement] = useState<{id: string, type: 'radiator' | 'boiler'} | null>(null);
   
   // Estado para zoom y pan
   const [zoom, setZoom] = useState(1);
@@ -18,7 +19,7 @@ export const Canvas = () => {
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
   
-  const { tool } = useToolsStore();
+  const { tool, setTool } = useToolsStore();
   const { 
     radiators, 
     boilers,
@@ -35,6 +36,7 @@ export const Canvas = () => {
     removeElement,
     floorPlans,
     setFloorPlanDimensions,
+    createManualPipe,
   } = useElementsStore();
 
   // Filtrar elementos por planta actual
@@ -377,16 +379,70 @@ export const Canvas = () => {
           ctx.fill();
         });
       }
+
+      // Indicador visual para tuberías verticales
+      if (pipe.floor === 'vertical' && pipe.points.length >= 2) {
+        const midPoint = pipe.points[Math.floor(pipe.points.length / 2)];
+        
+        // Fondo circular
+        ctx.fillStyle = 'rgba(156, 39, 176, 0.9)'; // Morado
+        ctx.beginPath();
+        ctx.arc(midPoint.x, midPoint.y, 15, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Borde
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Flechas arriba/abajo
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⇅', midPoint.x, midPoint.y);
+      }
     });
+
+    // Indicador cuando está en modo conexión de tubería
+    if ((tool === 'pipe' || tool === 'vertical-pipe') && pipeStartElement) {
+      const element = 
+        radiators.find(r => r.id === pipeStartElement.id) ||
+        boilers.find(b => b.id === pipeStartElement.id);
+      
+      if (element) {
+        // Resaltar elemento de inicio
+        ctx.strokeStyle = tool === 'vertical-pipe' ? '#9C27B0' : '#2196F3';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(
+          element.x - 4,
+          element.y - 4,
+          element.width + 8,
+          element.height + 8
+        );
+        ctx.setLineDash([]);
+        
+        // Línea de preview hasta el mouse
+        ctx.strokeStyle = tool === 'vertical-pipe' ? '#9C27B0' : '#2196F3';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 5]);
+        ctx.beginPath();
+        ctx.moveTo(element.x + element.width / 2, element.y + element.height / 2);
+        ctx.lineTo(mousePos.x, mousePos.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
     
     // Restaurar estado del contexto
     ctx.restore();
   };
 
-  // Redibujar cuando cambien los radiadores, calderas, pipes, backgroundImage o la selección
+  // Redibujar cuando cambien los radiadores, calderas, pipes, backgroundImage, selección, tool o pipeStart
   useEffect(() => {
     draw();
-  }, [radiators, boilers, pipes, selectedElementId, zoom, panOffset, backgroundImage]);
+  }, [radiators, boilers, pipes, selectedElementId, zoom, panOffset, backgroundImage, tool, pipeStartElement, mousePos]);
 
   // Redibujar al montar y al redimensionar
   useEffect(() => {
@@ -571,6 +627,47 @@ export const Canvas = () => {
         setSelectedElement(null);
         setIsDragging(false);
         console.log('Deseleccionado');
+      }
+    } else if (tool === 'pipe' || tool === 'vertical-pipe') {
+      // Modo de conexión de tubería manual
+      const foundRadiator = currentFloorRadiators.find(r => 
+        isPointInsideRadiator(coords.x, coords.y, r)
+      );
+      const foundBoiler = currentFloorBoilers.find(b => 
+        isPointInsideBoiler(coords.x, coords.y, b)
+      );
+      
+      const clickedElement = foundRadiator || foundBoiler;
+      
+      if (clickedElement) {
+        if (!pipeStartElement) {
+          // Primer click: guardar elemento de inicio
+          setPipeStartElement({
+            id: clickedElement.id,
+            type: foundRadiator ? 'radiator' : 'boiler'
+          });
+          console.log(`🔧 Inicio de ${tool === 'vertical-pipe' ? 'tubería VERTICAL' : 'tubería'} desde:`, clickedElement.id);
+        } else {
+          // Segundo click: crear tubería
+          const floor = tool === 'vertical-pipe' ? 'vertical' : currentFloor;
+          createManualPipe(pipeStartElement.id, clickedElement.id, floor);
+          
+          console.log(`✅ ${tool === 'vertical-pipe' ? 'Tubería VERTICAL' : 'Tubería'} creada:`, {
+            from: pipeStartElement.id,
+            to: clickedElement.id,
+            floor
+          });
+          
+          // Resetear y volver a modo select
+          setPipeStartElement(null);
+          setTool('select');
+        }
+      } else {
+        // Click en vacío: cancelar
+        if (pipeStartElement) {
+          console.log('❌ Conexión cancelada');
+          setPipeStartElement(null);
+        }
       }
     }
 
