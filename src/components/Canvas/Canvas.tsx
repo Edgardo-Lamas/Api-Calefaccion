@@ -482,8 +482,6 @@ export const Canvas = () => {
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log('🖱️ MOUSEDOWN DETECTADO - tool:', tool);
-    
     const coords = getMouseCoordinates(e);
     setMousePos(coords);
 
@@ -632,41 +630,12 @@ export const Canvas = () => {
       }
     } else if (tool === 'pipe' || tool === 'vertical-pipe') {
       // Modo de conexión de tubería manual
-      console.log('🔧 Click en modo tubería:', { 
-        tool, 
-        coords, 
-        pipeStartElement,
-        radiatorsInFloor: currentFloorRadiators.length,
-        boilersInFloor: currentFloorBoilers.length
-      });
-      
-      // Log de todos los radiadores y calderas con sus posiciones
-      console.log('📍 Radiadores en planta:', currentFloorRadiators.map(r => ({
-        id: r.id.substring(0, 8),
-        x: r.x,
-        y: r.y,
-        width: r.width,
-        height: r.height,
-        bounds: `x:${r.x}-${r.x + r.width}, y:${r.y}-${r.y + r.height}`
-      })));
-      
-      console.log('📍 Calderas en planta:', currentFloorBoilers.map(b => ({
-        id: b.id.substring(0, 8),
-        x: b.x,
-        y: b.y,
-        width: b.width,
-        height: b.height,
-        bounds: `x:${b.x}-${b.x + b.width}, y:${b.y}-${b.y + b.height}`
-      })));
-      
       const foundRadiator = currentFloorRadiators.find(r => 
         isPointInsideRadiator(coords.x, coords.y, r)
       );
       const foundBoiler = currentFloorBoilers.find(b => 
         isPointInsideBoiler(coords.x, coords.y, b)
       );
-      
-      console.log('🔍 Elementos encontrados:', { foundRadiator, foundBoiler });
       
       const clickedElement = foundRadiator || foundBoiler;
       

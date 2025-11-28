@@ -112,11 +112,11 @@ export const Toolbar = () => {
 
   const handleAutoConnect = () => {
     if (radiators.length === 0) {
-      alert('⚠️ No hay radiadores para conectar');
+      alert('⚠️ No hay radiadores para conectar.\n\nCrea radiadores primero haciendo click en el botón "Radiador" y luego en el canvas.');
       return;
     }
     if (boilers.length === 0) {
-      alert('⚠️ No hay calderas para conectar');
+      alert('⚠️ No hay calderas para conectar.\n\nCrea una caldera primero haciendo click en el botón "Caldera" y luego en el canvas.');
       return;
     }
 
