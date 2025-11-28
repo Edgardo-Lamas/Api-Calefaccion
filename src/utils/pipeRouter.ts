@@ -186,6 +186,7 @@ export function generateAutoPipes(
         points: rp.path,
         diameter: 16, // Default sin dimensionar
         material: 'Multicapa',
+        floor: boiler.floor, // Asignar planta de la caldera
       });
       
       // RETORNO
@@ -200,6 +201,7 @@ export function generateAutoPipes(
         points: returnPath,
         diameter: 16, // Default sin dimensionar
         material: 'Multicapa',
+        floor: boiler.floor, // Asignar planta de la caldera
       });
       
     } else {
@@ -219,6 +221,7 @@ export function generateAutoPipes(
         points: commonPath,
         diameter: 16, // Default sin dimensionar - se calculará luego
         material: 'Multicapa',
+        floor: boiler.floor, // Asignar planta de la caldera
       });
       
       const commonReturnPath = commonPath.map(p => ({
@@ -232,6 +235,7 @@ export function generateAutoPipes(
         points: commonReturnPath,
         diameter: 16, // Default sin dimensionar
         material: 'Multicapa',
+        floor: boiler.floor, // Asignar planta de la caldera
       });
       
       // TRAMOS INDIVIDUALES (ramificación → cada radiador)
@@ -245,6 +249,7 @@ export function generateAutoPipes(
           points: branchPath,
           diameter: 16, // Default sin dimensionar
           material: 'Multicapa',
+          floor: boiler.floor, // Asignar planta de la caldera
         });
         
         const branchReturnPath = branchPath.map(p => ({
@@ -258,6 +263,7 @@ export function generateAutoPipes(
           points: branchReturnPath,
           diameter: 16, // Default sin dimensionar
           material: 'Multicapa',
+          floor: boiler.floor, // Asignar planta de la caldera
         });
       });
     }
