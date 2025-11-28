@@ -264,18 +264,39 @@ export const useElementsStore = create<ElementsStore>((set) => ({
   },
 
   createManualPipe: (fromId, toId, floor) => {
+    console.log('📞 createManualPipe llamada con:', { fromId, toId, floor });
+    
     set((state) => {
+      console.log('📊 Estado actual:', {
+        radiators: state.radiators.length,
+        boilers: state.boilers.length,
+        pipes: state.pipes.length,
+        currentFloor: state.currentFloor
+      });
+      
       // Buscar elementos de origen y destino
       const fromRadiator = state.radiators.find(r => r.id === fromId);
       const fromBoiler = state.boilers.find(b => b.id === fromId);
       const toRadiator = state.radiators.find(r => r.id === toId);
       const toBoiler = state.boilers.find(b => b.id === toId);
 
+      console.log('🔍 Elementos buscados:', {
+        fromRadiator: fromRadiator?.id,
+        fromBoiler: fromBoiler?.id,
+        toRadiator: toRadiator?.id,
+        toBoiler: toBoiler?.id
+      });
+
       const fromElement = fromRadiator || fromBoiler;
       const toElement = toRadiator || toBoiler;
 
       if (!fromElement || !toElement) {
-        console.error('❌ No se encontraron los elementos para conectar');
+        console.error('❌ No se encontraron los elementos para conectar', {
+          fromElement: fromElement?.id,
+          toElement: toElement?.id,
+          fromId,
+          toId
+        });
         return state;
       }
 

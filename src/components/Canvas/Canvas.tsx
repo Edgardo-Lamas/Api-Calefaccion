@@ -630,12 +630,22 @@ export const Canvas = () => {
       }
     } else if (tool === 'pipe' || tool === 'vertical-pipe') {
       // Modo de conexión de tubería manual
+      console.log('🔧 Click en modo tubería:', { 
+        tool, 
+        coords, 
+        pipeStartElement,
+        radiatorsInFloor: currentFloorRadiators.length,
+        boilersInFloor: currentFloorBoilers.length
+      });
+      
       const foundRadiator = currentFloorRadiators.find(r => 
         isPointInsideRadiator(coords.x, coords.y, r)
       );
       const foundBoiler = currentFloorBoilers.find(b => 
         isPointInsideBoiler(coords.x, coords.y, b)
       );
+      
+      console.log('🔍 Elementos encontrados:', { foundRadiator, foundBoiler });
       
       const clickedElement = foundRadiator || foundBoiler;
       
@@ -650,6 +660,12 @@ export const Canvas = () => {
         } else {
           // Segundo click: crear tubería
           const floor = tool === 'vertical-pipe' ? 'vertical' : currentFloor;
+          console.log(`🚀 Creando tubería:`, {
+            from: pipeStartElement.id,
+            to: clickedElement.id,
+            floor
+          });
+          
           createManualPipe(pipeStartElement.id, clickedElement.id, floor);
           
           console.log(`✅ ${tool === 'vertical-pipe' ? 'Tubería VERTICAL' : 'Tubería'} creada:`, {
@@ -667,6 +683,8 @@ export const Canvas = () => {
         if (pipeStartElement) {
           console.log('❌ Conexión cancelada');
           setPipeStartElement(null);
+        } else {
+          console.log('⚠️ No se encontró ningún elemento en las coordenadas:', coords);
         }
       }
     }
